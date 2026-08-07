@@ -19,11 +19,12 @@ export function prIconColor(status: PrItem["checkStatus"]): string {
 export function PrIcon({
 	status,
 	className,
-}: { status: PrItem["checkStatus"]; className?: string }) {
+	color,
+}: { status: PrItem["checkStatus"]; className?: string; color?: string }) {
 	return (
 		<GitPullRequestIcon
 			className={cn("shrink-0", className)}
-			style={{ color: prIconColor(status) }}
+			style={{ color: color ?? prIconColor(status) }}
 		/>
 	);
 }
@@ -70,9 +71,10 @@ export function PrRichCard({
 	variant?: "row" | "chip" | "card";
 }) {
 	if (variant === "card") {
+		const statusColor = pr.isDraft ? "var(--ink-secondary)" : prIconColor(pr.checkStatus);
 		return (
 			<span
-				className="pr-mention-card flex w-full cursor-pointer items-center gap-3 rounded-xl border border-[var(--separator)] bg-[var(--surface-raised)] p-3 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
+				className="pr-mention-card flex w-full cursor-pointer items-start justify-start gap-2.5 rounded-2xl bg-[var(--surface-muted)] p-2 transition-colors hover:bg-[var(--surface-hover)]"
 				role="button"
 				tabIndex={0}
 				title={`Open ${pr.repo}#${pr.number}`}
@@ -85,23 +87,19 @@ export function PrRichCard({
 				}}
 			>
 				<span
-					className={cn(
-						"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-						pr.isDraft
-							? "bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
-							: "bg-[color-mix(in_oklab,var(--success)_12%,transparent)]",
-					)}
+					className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+					style={{ background: `color-mix(in oklab, ${statusColor} 12%, transparent)` }}
 				>
-					<PrIcon status={pr.checkStatus} className="h-4 w-4" />
+					<PrIcon status={pr.checkStatus} className="h-3.5 w-3.5" color={statusColor} />
 				</span>
-				<span className="flex min-w-0 flex-1 flex-col gap-0.5">
-					<span className="line-clamp-2 text-[13px] font-medium leading-snug text-[var(--ink)]">
+				<span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+					<span className="line-clamp-2 text-[12.5px] font-medium leading-snug text-[var(--ink)]">
 						{pr.title}
 					</span>
 					<span className="flex items-center gap-1.5">
 						<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
 						{pr.isDraft && (
-							<span className="rounded bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
+							<span className="rounded-md bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
 								Draft
 							</span>
 						)}
