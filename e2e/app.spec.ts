@@ -217,6 +217,29 @@ test("refresh shows a spinner inside the button without swapping the list to ske
 	await expect(refreshBtn).toHaveAttribute("title", "Refresh pull requests");
 });
 
+test("deleting the last note shows the empty state, not a blank screen", async ({ page }) => {
+	await page.goto("/");
+	await newNoteButton(page).click();
+	await page.waitForTimeout(300);
+	await page.locator(".tiptap").click();
+	await page.locator(".tiptap").pressSequentially("only note");
+
+	await page.locator("header button[title='Note options']").click();
+	await page.waitForTimeout(200);
+	await page.getByText("Delete note", { exact: true }).click();
+	await page.waitForTimeout(600);
+
+	// The app must still render the top bar + empty state (no blank screen).
+	await expect(page.locator("header")).toBeVisible();
+	await expect(page.getByText("No note selected", { exact: true })).toBeVisible();
+	await expect(page.getByText("New note", { exact: true })).toBeVisible();
+
+	// And a new note can be created right after.
+	await newNoteButton(page).click();
+	await page.waitForTimeout(400);
+	await expect(page.locator(".tiptap")).toBeVisible();
+});
+
 test("slash command opens the command menu", async ({ page }) => {
 	await page.goto("/");
 	await newNoteButton(page).click();

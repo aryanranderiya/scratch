@@ -63,36 +63,8 @@ export function TopBar() {
 			className="drag-header flex h-11 shrink-0 items-center gap-1 pr-2"
 			data-tauri-drag-region
 		>
+			{/* Note title takes the full width; tabs sit on the right. */}
 			<div className="drag-header-pad flex min-w-0 flex-1 items-center gap-1.5">
-				<div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-[var(--surface-muted)] p-0.5">
-					<button
-						type="button"
-						title="Scratchpad"
-						onClick={() => setView("notes")}
-						className={cn(
-							"flex h-6 items-center rounded-md px-2 text-[11px] font-medium transition-colors",
-							view === "notes"
-								? "bg-[var(--surface-raised)] text-[var(--ink)] shadow-1"
-								: "text-[var(--ink-secondary)] hover:text-[var(--ink)]",
-						)}
-					>
-						Scratchpad
-					</button>
-					<button
-						type="button"
-						title="Kanban"
-						onClick={() => setView("board")}
-						className={cn(
-							"flex h-6 items-center rounded-md px-2 text-[11px] font-medium transition-colors",
-							view === "board"
-								? "bg-[var(--surface-raised)] text-[var(--ink)] shadow-1"
-								: "text-[var(--ink-secondary)] hover:text-[var(--ink)]",
-						)}
-					>
-						Kanban
-					</button>
-				</div>
-				{view === "board" && <BoardRepoFilter allRepos={allRepos} />}
 				{view === "notes" &&
 					(editing ? (
 						<input
@@ -127,8 +99,42 @@ export function TopBar() {
 					))}
 			</div>
 
+			<div className="flex shrink-0 items-center gap-1.5">
+				{view === "board" && <BoardRepoFilter allRepos={allRepos} />}
+				<div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-[var(--surface-muted)] p-0.5">
+					<button
+						type="button"
+						title="Scratchpad"
+						onClick={() => setView("notes")}
+						className={cn(
+							"flex h-6 items-center rounded-md px-2 text-[11px] font-medium transition-colors",
+							view === "notes"
+								? "bg-[var(--surface-raised)] text-[var(--ink)] shadow-1"
+								: "text-[var(--ink-secondary)] hover:text-[var(--ink)]",
+						)}
+					>
+						Scratchpad
+					</button>
+					<button
+						type="button"
+						title="Kanban"
+						onClick={() => setView("board")}
+						className={cn(
+							"flex h-6 items-center rounded-md px-2 text-[11px] font-medium transition-colors",
+							view === "board"
+								? "bg-[var(--surface-raised)] text-[var(--ink)] shadow-1"
+								: "text-[var(--ink-secondary)] hover:text-[var(--ink)]",
+						)}
+					>
+						Kanban
+					</button>
+				</div>
+				<div className="hidden min-[360px]:block">
+					<SyncIndicator />
+				</div>
+			</div>
+
 			<div className="flex shrink-0 items-center gap-0.5">
-				<SyncIndicator />
 				{view === "board" && (
 					<span className="mr-1 hidden items-center gap-1 text-[11px] text-tertiary min-[420px]:flex">
 						<Refresh01Icon className="h-3 w-3" />
@@ -154,7 +160,7 @@ export function TopBar() {
 							}
 							onClick={() => void persistToolbarCollapsed(!config?.toolbarCollapsed)}
 							className={cn(
-								"flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+								"hidden h-7 w-7 items-center justify-center rounded-md transition-colors min-[360px]:flex",
 								config?.toolbarCollapsed
 									? "bg-[var(--accent-soft)] text-[var(--accent)]"
 									: "text-[var(--ink-secondary)] hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]",

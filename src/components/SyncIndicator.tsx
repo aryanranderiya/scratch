@@ -5,7 +5,6 @@ import { useAppStore } from "../store";
 
 export function SyncIndicator() {
 	const sync = useAppStore((s) => s.sync);
-	const refreshSyncStatus = useAppStore((s) => s.refreshSyncStatus);
 	const syncNow = useAppStore((s) => s.syncNow);
 	const config = useAppStore((s) => s.config);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -15,12 +14,12 @@ export function SyncIndicator() {
 	useEffect(() => {
 		if (intervalRef.current) clearInterval(intervalRef.current);
 		intervalRef.current = setInterval(() => {
-			void refreshSyncStatus();
+			void syncNow();
 		}, Math.max(interval, 10) * 1000);
 		return () => {
 			if (intervalRef.current) clearInterval(intervalRef.current);
 		};
-	}, [interval, refreshSyncStatus]);
+	}, [interval, syncNow]);
 
 	const syncing = sync?.syncing ?? false;
 	const lastError = sync?.lastError ?? null;
