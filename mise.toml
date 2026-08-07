@@ -1,0 +1,4 @@
+[tools]
+node = "22"
+rust = "stable"
+pnpm = "10.17.1"

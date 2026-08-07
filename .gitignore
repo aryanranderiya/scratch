@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+
+# Rust
+src-tauri/target/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Editor / OS
+.DS_Store
+*.log
+.vscode/
+
+# Env
+.env
+.env.local
+
+# Vault test dirs
+/scratch-vault/
