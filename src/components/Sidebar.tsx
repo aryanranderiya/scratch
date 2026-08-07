@@ -50,7 +50,7 @@ export function Sidebar() {
 			}}
 		>
 			<aside
-				className="glass-strong absolute bottom-0 left-0 top-11 flex w-[280px] max-w-[85vw] flex-col shadow-3"
+				className="absolute bottom-0 left-0 top-11 flex w-[280px] max-w-[85vw] flex-col border-r border-[var(--separator)] bg-[var(--surface)] shadow-3"
 				style={{ animation: "sidebar-in 0.18s cubic-bezier(0.32, 0.72, 0, 1)" }}
 			>
 				<div className="flex items-center gap-2 px-3 pb-2 pt-3">

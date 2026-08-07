@@ -43,12 +43,6 @@ export function TopBar() {
 			<div className="drag-header-pad flex min-w-0 flex-1 items-center gap-1.5">
 				{view === "notes" && (
 					<>
-						<img
-							src="/icon.png"
-							alt=""
-							className="hidden h-[18px] w-[18px] shrink-0 rounded-[5px] min-[380px]:block"
-							draggable={false}
-						/>
 						{editing ? (
 							<input
 								ref={(el) => {

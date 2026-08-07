@@ -2,7 +2,6 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
 	CheckmarkCircle01Icon,
 	CloudIcon,
-	EyeIcon,
 	PlusSignIcon,
 	RefreshIcon,
 	StarIcon,
@@ -18,9 +17,19 @@ import { Modal } from "./ui/Modal";
 import { Spinner } from "./ui/Spinner";
 import { Toggle } from "./ui/Toggle";
 
-function SectionLabel({ children }: { children: string }) {
+function SettingsCard({
+	title,
+	description,
+	children,
+}: { title: string; description?: string; children: React.ReactNode }) {
 	return (
-		<h3 className="text-[11px] font-medium uppercase tracking-wider text-tertiary">{children}</h3>
+		<section className="glass-soft space-y-3 rounded-xl p-4">
+			<div>
+				<h3 className="text-[13px] font-semibold text-[var(--ink)]">{title}</h3>
+				{description && <p className="mt-0.5 text-[11px] text-tertiary">{description}</p>}
+			</div>
+			{children}
+		</section>
 	);
 }
 
@@ -164,10 +173,11 @@ export function SettingsModal() {
 
 	return (
 		<Modal open={open} onClose={() => setOpen(false)} title="Settings" width="max-w-lg">
-			<div className="space-y-4">
-				<section className="space-y-2">
-					<SectionLabel>GitHub</SectionLabel>
-
+			<div className="space-y-3">
+				<SettingsCard
+					title="GitHub"
+					description="Scratch uses your token to search pull requests and sync your notes."
+				>
 					<div className="flex gap-2">
 						<Input
 							type={showToken ? "text" : "password"}
@@ -192,16 +202,13 @@ export function SettingsModal() {
 
 					<p className="text-[11px] leading-relaxed text-tertiary">
 						Token needs <code className="rounded bg-[var(--surface-muted)] px-1">repo</code> scope
-						for PR search and sync. It's stored locally on this machine.
-					</p>
-					<p className="text-[11px] text-tertiary">
-						Create one at{" "}
+						for PR search and sync. It's stored locally on this machine.{" "}
 						<button
 							type="button"
 							className="text-[var(--accent)] hover:underline"
 							onClick={() => void openUrl("https://github.com/settings/tokens")}
 						>
-							github.com/settings/tokens
+							Create one
 						</button>
 					</p>
 
@@ -229,9 +236,6 @@ export function SettingsModal() {
 								)}
 								Create private scratch-notes repo
 							</Button>
-							<p className="text-[11px] text-tertiary">
-								Creates a private repo on GitHub that Scratch auto-pushes your notes to.
-							</p>
 							{repos.length > 0 && (
 								<div className="space-y-1">
 									<p className="text-[11px] font-medium text-tertiary">
@@ -256,13 +260,12 @@ export function SettingsModal() {
 							)}
 						</div>
 					)}
-				</section>
+				</SettingsCard>
 
-				<div className="h-px bg-[var(--surface-hover)]" />
-
-				<section className="space-y-2">
-					<SectionLabel>Vault &amp; Sync</SectionLabel>
-
+				<SettingsCard
+					title="Vault & Sync"
+					description="Notes are plain markdown files in a git repo, synced on a timer."
+				>
 					<div className="flex gap-2">
 						<Input
 							value={vaultPath}
@@ -286,14 +289,14 @@ export function SettingsModal() {
 
 					{icloudVaultPath && (
 						<div className="flex items-center justify-between gap-3">
-							<div>
-								<div className="flex items-center gap-1.5 text-[13px]">
-									<CloudIcon className="h-4 w-4 text-[var(--ink-secondary)]" />
-									iCloud Drive sync
+							<div className="flex items-center gap-2">
+								<CloudIcon className="h-4 w-4 text-[var(--ink-secondary)]" />
+								<div>
+									<div className="text-[13px]">iCloud Drive sync</div>
+									<p className="text-[11px] text-tertiary">
+										Store the vault in iCloud Drive (synced to your other devices)
+									</p>
 								</div>
-								<p className="text-[11px] text-tertiary">
-									Store the vault in iCloud Drive (synced to your other devices)
-								</p>
 							</div>
 							<Toggle
 								checked={icloudOn}
@@ -321,75 +324,70 @@ export function SettingsModal() {
 							Sync now
 						</Button>
 					</div>
-				</section>
+				</SettingsCard>
 
 				{connected && config?.githubToken && (
-					<>
-						<div className="h-px bg-[var(--surface-hover)]" />
-
-						<section className="space-y-2">
-							<SectionLabel>Organizations</SectionLabel>
-
-							{orgsLoading ? (
-								<div className="flex items-center gap-2 py-1 text-[13px] text-tertiary">
-									<Spinner className="h-3.5 w-3.5" />
-									Loading organizations...
-								</div>
-							) : (
-								<ul className="space-y-0.5">
-									{sortedOrgs.map((org) => {
-										const hidden = config.hiddenOrgs.includes(org);
-										const favorite = config.favoriteOrgs.includes(org);
-										return (
-											<li
-												key={org}
-												className="flex items-center justify-between rounded-lg py-0.5 pr-0.5 pl-1"
-											>
-												<span className="text-[13px]">{org}</span>
-												<span className="flex items-center gap-0.5">
-													<Button
-														variant="ghost"
-														size="icon"
-														title={hidden ? "Show" : "Hide"}
-														aria-label={`${hidden ? "Show" : "Hide"} ${org}`}
-														onClick={() => void toggleOrgHidden(org)}
-														className={
-															hidden ? "text-[var(--accent)] hover:text-[var(--accent)]" : undefined
-														}
-													>
-														<EyeIcon className="h-4 w-4" />
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														title={favorite ? "Unfavorite" : "Favorite"}
-														aria-label={`${favorite ? "Unfavorite" : "Favorite"} ${org}`}
-														onClick={() => void toggleOrgFavorite(org)}
-														className={
-															favorite
-																? "text-[var(--warning)] hover:text-[var(--warning)]"
-																: undefined
-														}
-													>
-														<StarIcon className="h-4 w-4" />
-													</Button>
-												</span>
-											</li>
-										);
-									})}
-								</ul>
-							)}
-
-							<p className="text-[11px] text-tertiary">Hidden orgs are excluded from PR search.</p>
-						</section>
-					</>
+					<SettingsCard
+						title="Organizations"
+						description="Hidden orgs are excluded from PR search; favorites sort to the top."
+					>
+						{orgsLoading ? (
+							<div className="flex items-center gap-2 py-1 text-[13px] text-tertiary">
+								<Spinner className="h-3.5 w-3.5" />
+								Loading organizations...
+							</div>
+						) : (
+							<ul className="space-y-1">
+								{sortedOrgs.map((org) => {
+									const hidden = config.hiddenOrgs.includes(org);
+									const favorite = config.favoriteOrgs.includes(org);
+									return (
+										<li
+											key={org}
+											className="flex items-center justify-between gap-2 rounded-lg px-1 py-1"
+										>
+											<span className="min-w-0 truncate text-[13px]">{org}</span>
+											<span className="flex shrink-0 items-center gap-2">
+												<button
+													type="button"
+													role="switch"
+													aria-checked={!hidden}
+													title={hidden ? `Show ${org} in PR search` : `Hide ${org} from PR search`}
+													onClick={() => void toggleOrgHidden(org)}
+													className="flex h-6 w-10 items-center rounded-full transition-colors duration-200"
+													style={{
+														background: hidden
+															? "var(--surface-hover)"
+															: "var(--accent)",
+														justifyContent: hidden ? "flex-start" : "flex-end",
+													}}
+												>
+													<span className="mx-0.5 h-5 w-5 rounded-full bg-white shadow-1" />
+												</button>
+												<Button
+													variant="ghost"
+													size="icon"
+													title={favorite ? "Unfavorite" : "Favorite"}
+													aria-label={`${favorite ? "Unfavorite" : "Favorite"} ${org}`}
+													onClick={() => void toggleOrgFavorite(org)}
+													className={
+														favorite
+															? "text-[var(--warning)] hover:text-[var(--warning)]"
+															: undefined
+													}
+												>
+													<StarIcon className="h-4 w-4" />
+												</Button>
+											</span>
+										</li>
+									);
+								})}
+							</ul>
+						)}
+					</SettingsCard>
 				)}
 
-				<div className="h-px bg-[var(--surface-hover)]" />
-
-				<section className="space-y-2">
-					<SectionLabel>Appearance</SectionLabel>
-
+				<SettingsCard title="Appearance">
 					<div className="flex items-center gap-2">
 						{(
 							[
@@ -412,7 +410,7 @@ export function SettingsModal() {
 							</button>
 						))}
 					</div>
-				</section>
+				</SettingsCard>
 
 				{error && (
 					<div className="rounded-xl bg-[color-mix(in_oklab,var(--danger)_10%,transparent)] px-3 py-2 text-[12px] text-[var(--danger)]">

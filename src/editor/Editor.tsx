@@ -6,10 +6,9 @@ import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowUp01Icon } from "hugeicons-react";
+import { ArrowUp01Icon, PlusSignIcon } from "hugeicons-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
-import { Logo } from "../components/Logo";
 import { openUrl } from "../lib/open";
 import { cn } from "../lib/utils";
 import { useAppStore } from "../store";
@@ -21,6 +20,7 @@ export function Editor() {
 	const active = useAppStore((s) => s.active);
 	const updateActive = useAppStore((s) => s.updateActive);
 	const saveActive = useAppStore((s) => s.saveActive);
+	const createNote = useAppStore((s) => s.createNote);
 	const collapsed = useAppStore((s) => s.config?.toolbarCollapsed ?? false);
 	const persistToolbarCollapsed = useAppStore((s) => s.persistToolbarCollapsed);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,9 +124,23 @@ export function Editor() {
 					<EditorContent editor={editor} className="px-5 py-4" />
 				</div>
 			) : (
-				<div className="flex flex-1 flex-col items-center justify-center gap-3">
-					<Logo size={28} className="opacity-40" />
+				<div className="flex flex-1 flex-col items-center justify-center gap-4">
+					<img
+						src="/icon.png"
+						alt="Scratch"
+						className="h-12 w-12 rounded-[14px] opacity-70"
+						draggable={false}
+					/>
 					<p className="text-[13px] text-tertiary">No note selected</p>
+					<button
+						type="button"
+						title="New note"
+						onClick={() => void createNote()}
+						className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent-hover)] active:opacity-90"
+					>
+						<PlusSignIcon className="h-4 w-4" />
+						New note
+					</button>
 				</div>
 			)}
 			<button

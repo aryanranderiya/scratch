@@ -14,7 +14,6 @@ function newNoteButton(page: Page) {
 test("boots into the compact scratchpad with unified top bar", async ({ page }) => {
 	await page.goto("/");
 	const header = page.locator("header");
-	await expect(header.locator("img")).toBeVisible();
 	await expect(header.getByTitle("Note options")).toBeVisible();
 	await expect(header.getByTitle("New note")).toBeVisible();
 	await expect(header.getByTitle("Board")).toBeVisible();
