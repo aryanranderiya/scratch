@@ -147,7 +147,10 @@ test("pasting an image saves it to the vault and inserts a markdown image", asyn
 	const img = page.locator(".tiptap img.scratch-image");
 	await expect(img).toHaveCount(1);
 	// Rendered through the scratch-asset:// URI scheme (vault-relative file)
-	await expect(img).toHaveAttribute("src", /^scratch-asset:\/\/scratch-assets\/mock-\d+\.png$/);
+	await expect(img).toHaveAttribute(
+		"src",
+		/^scratch-asset:\/\/vault\/scratch-assets\/mock-\d+\.png$/,
+	);
 
 	await page.waitForTimeout(1200);
 	const stored = await page.evaluate(() => {
@@ -177,6 +180,41 @@ test("cmd+a and ctrl+a select the whole note", async ({ page }) => {
 		await editor.click();
 		await page.waitForTimeout(150);
 	}
+});
+
+test("refresh shows a spinner inside the button without swapping the list to skeletons", async ({ page }) => {
+	await page.goto("/");
+	await newNoteButton(page).click();
+	await page.waitForTimeout(300);
+
+	const editor = page.locator(".tiptap");
+	await editor.click();
+	await editor.pressSequentially("See ");
+	await editor.press("@");
+
+	const popup = page.locator("[data-scratch-popup='pr']");
+	await expect(popup).toBeVisible();
+
+	// Slow down the forced refetch so the spinner is observable.
+	await page.evaluate(() => {
+		const s = (window as unknown as { __store?: { prSearchDelayMs?: number } }).__store;
+		if (s) s.prSearchDelayMs = 800;
+	});
+
+	// The refresh button is the last button in the popup (bottom of the list).
+	const refreshBtn = popup.locator("button").last();
+	await expect(refreshBtn).toHaveAttribute("title", "Refresh pull requests");
+	await refreshBtn.click();
+
+	// The list stays (PR cards still visible — no skeleton swap)…
+	await expect(popup.getByText("chore: release master", { exact: true })).toBeVisible();
+	// …and the refresh icon inside the button spins until the fetch resolves.
+	await expect(refreshBtn.locator("svg.animate-spin")).toBeVisible();
+
+	// After the delay the spinner is gone and the button is re-enabled.
+	await expect(refreshBtn.locator("svg.animate-spin")).toHaveCount(0);
+	await expect(refreshBtn).toBeEnabled();
+	await expect(refreshBtn).toHaveAttribute("title", "Refresh pull requests");
 });
 
 test("slash command opens the command menu", async ({ page }) => {

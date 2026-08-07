@@ -83,7 +83,10 @@ export function Editor() {
 						"img",
 						mergeAttributes(this.options.HTMLAttributes, {
 							...rest,
-							src: `scratch-asset://${src}`,
+							// Fixed host so uri.path() keeps the scratch-assets/ prefix
+							// (scratch-asset://scratch-assets/x.png would parse the
+							// directory as the host and 404).
+							src: `scratch-asset://vault/${src}`,
 						}),
 					];
 				},

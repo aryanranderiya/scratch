@@ -32,7 +32,7 @@ fn setup_app() -> TestApp {
         let cfg: models::AppConfig = get_config(app.state()).unwrap();
         let mut cfg = cfg;
         cfg.vault_path = vault.path().to_string_lossy().into_owned();
-        save_config(app.state(), cfg).unwrap();
+        tauri::async_runtime::block_on(save_config(app.state(), cfg)).unwrap();
     }
 
     // keep tempdirs alive for the duration of the test
@@ -58,7 +58,7 @@ fn config_roundtrip() {
         view_mode: "notes".into(),
         toolbar_collapsed: false,
     };
-    save_config(t.app.state(), updated.clone()).unwrap();
+    tauri::async_runtime::block_on(save_config(t.app.state(), updated.clone())).unwrap();
     let cfg2: models::AppConfig = get_config(t.app.state()).unwrap();
     assert_eq!(cfg2.vault_path, "/tmp/vault");
     assert_eq!(cfg2.sync_interval_seconds, 300);
@@ -114,7 +114,7 @@ fn notes_persist_across_restart() {
         let cfg: models::AppConfig = get_config(app.state()).unwrap();
         let mut cfg = cfg;
         cfg.vault_path = vault.path().to_string_lossy().into_owned();
-        save_config(app.state(), cfg).unwrap();
+        tauri::async_runtime::block_on(save_config(app.state(), cfg)).unwrap();
         let created: models::Note = create_note(app.state()).unwrap();
         let mut note = created;
         note.title = "Persisted".into();
@@ -136,7 +136,8 @@ fn notes_persist_across_restart() {
 #[test]
 fn github_token_missing_returns_empty_prs() {
     let t = setup_app();
-    let prs: Vec<models::PrGroup> = search_prs(t.app.state(), None).unwrap();
+    let prs: Vec<models::PrGroup> =
+        tauri::async_runtime::block_on(search_prs(t.app.state(), None)).unwrap();
     assert!(prs.is_empty());
 }
 
@@ -189,7 +190,7 @@ fn config_defaults_include_new_fields() {
     updated.favorite_orgs = vec!["theexperiencecompany".into()];
     updated.view_mode = "board".into();
     updated.toolbar_collapsed = true;
-    save_config(t.app.state(), updated.clone()).unwrap();
+    tauri::async_runtime::block_on(save_config(t.app.state(), updated.clone())).unwrap();
 
     let reloaded: models::AppConfig = get_config(t.app.state()).unwrap();
     assert_eq!(reloaded.hidden_orgs, vec!["SomeOrg"]);
@@ -259,7 +260,7 @@ fn sync_wires_remote_and_renames_master_to_main() {
     updated.notes_repo = Some("testuser/scratch-notes".into());
     updated.github_token = Some("fake-token".into());
     updated.github_login = Some("testuser".into());
-    save_config(t.app.state(), updated.clone()).unwrap();
+    tauri::async_runtime::block_on(save_config(t.app.state(), updated.clone())).unwrap();
 
     let repo = git2::Repository::open(&vault).unwrap();
     let head = repo.head().unwrap();

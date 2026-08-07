@@ -96,6 +96,9 @@ export const tauriMockInitScript = `
           return null;
         case "search_prs": {
           const hidden = new Set(store.config.hiddenOrgs ?? []);
+          if (args.force && store.prSearchDelayMs) {
+            await new Promise((r) => setTimeout(r, store.prSearchDelayMs));
+          }
           return JSON.parse(
             JSON.stringify(store.prGroups.filter((g) => !hidden.has(g.org))),
           );

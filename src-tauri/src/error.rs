@@ -10,6 +10,8 @@ pub enum AppError {
     Git(String),
     #[error("io error: {0}")]
     Io(String),
+    #[error("sync error: {0}")]
+    Sync(String),
 }
 
 impl From<git2::Error> for AppError {

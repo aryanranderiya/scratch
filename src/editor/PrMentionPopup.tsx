@@ -1,6 +1,5 @@
 import { Refresh01Icon } from "hugeicons-react";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { cn } from "../lib/utils";
 import type { PrItem } from "../lib/types";
 import { useAppStore } from "../store";
 import { PrRichCard } from "./PrRichCard";
@@ -183,7 +182,7 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 						})}
 					</div>
 				))}
-				<div className="mt-1 flex items-center justify-center border-t border-[var(--separator)] pt-1">
+				<div className="mt-1 flex items-center justify-center">
 					<button
 						type="button"
 						title={refreshing ? "Refreshing…" : "Refresh pull requests"}
@@ -192,9 +191,11 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 						disabled={refreshing}
 						className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)] disabled:opacity-60"
 					>
-						<Refresh01Icon
-							className={cn("h-3.5 w-3.5", refreshing && "animate-spin")}
-						/>
+						{refreshing ? (
+							<Refresh01Icon className="h-3.5 w-3.5 animate-spin" />
+						) : (
+							<Refresh01Icon className="h-3.5 w-3.5" />
+						)}
 					</button>
 				</div>
 			</div>

@@ -13,7 +13,7 @@ pub struct AppState {
     pub github: Arc<GithubClient>,
     pub notes: Mutex<NotesStore>,
     pub board: Mutex<BoardStore>,
-    pub sync: SyncManager,
+    pub sync: Arc<SyncManager>,
 }
 
 impl AppState {
@@ -49,15 +49,25 @@ pub fn get_config(state: State<AppState>) -> AppResult<AppConfig> {
 }
 
 #[tauri::command]
-pub fn save_config(state: State<AppState>, config: AppConfig) -> AppResult<()> {
+pub async fn save_config(state: State<'_, AppState>, config: AppConfig) -> AppResult<()> {
     state.config.save(&config)?;
     state.refresh_notes()?;
     // Wire the origin remote as soon as a notes repo is chosen, so the first
-    // autosave cycle syncs instead of silently staying local.
+    // autosave cycle syncs instead of silently staying local. Run off the main
+    // thread so the first sync never freezes the UI.
     let token = config.github_token.clone().unwrap_or_default();
     let notes_repo = config.notes_repo.clone();
     if !token.is_empty() && notes_repo.is_some() {
-        let _ = state.sync.sync(&token, notes_repo.as_deref());
+        // Best-effort background sync: wire origin + push immediately. Its
+        // outcome (including errors) is surfaced via sync_status, not by
+        // failing the config save.
+        let sync = state.sync.clone();
+        let token = token.clone();
+        let notes_repo = notes_repo.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || {
+            sync.sync(&token, notes_repo.as_deref())
+        })
+        .await;
     }
     Ok(())
 }
@@ -119,54 +129,65 @@ pub fn save_image(state: State<AppState>, bytes: Vec<u8>, ext: Option<String>) -
 }
 
 #[tauri::command]
-pub fn get_github_user(token: String) -> AppResult<GithubUser> {
+pub async fn get_github_user(token: String) -> AppResult<GithubUser> {
     let client = GithubClient::new();
-    let user = tauri::async_runtime::block_on(client.get_user(&token))?;
+    let user = client.get_user(&token).await?;
     Ok(user)
 }
 
 #[tauri::command]
-pub fn list_orgs(token: String) -> AppResult<Vec<String>> {
+pub async fn list_orgs(token: String) -> AppResult<Vec<String>> {
     let client = GithubClient::new();
-    let orgs = tauri::async_runtime::block_on(client.list_orgs(&token))?;
+    let orgs = client.list_orgs(&token).await?;
     Ok(orgs)
 }
 
 #[tauri::command]
-pub fn list_user_repos(token: String) -> AppResult<Vec<RepoChoice>> {
+pub async fn list_user_repos(token: String) -> AppResult<Vec<RepoChoice>> {
     let client = GithubClient::new();
-    let repos = tauri::async_runtime::block_on(client.list_user_repos(&token))?;
+    let repos = client.list_user_repos(&token).await?;
     Ok(repos)
 }
 
 #[tauri::command]
-pub fn create_notes_repo(token: String) -> AppResult<String> {
+pub async fn create_notes_repo(token: String) -> AppResult<String> {
     let client = GithubClient::new();
-    let full_name =
-        tauri::async_runtime::block_on(client.create_notes_repo(&token))?;
+    let full_name = client.create_notes_repo(&token).await?;
     Ok(full_name)
 }
 
 #[tauri::command]
-pub fn search_prs(state: State<AppState>, force: Option<bool>) -> AppResult<Vec<PrGroup>> {
+pub async fn search_prs(
+    state: State<'_, AppState>,
+    force: Option<bool>,
+) -> AppResult<Vec<PrGroup>> {
     let cfg = state.config.load()?;
     let token = cfg.github_token.clone().unwrap_or_default();
     let login = cfg.github_login.clone().unwrap_or_default();
     if token.is_empty() || login.is_empty() {
         return Ok(Vec::new());
     }
-    let groups =
-        tauri::async_runtime::block_on(state.github.search_prs(&token, &login, force.unwrap_or(false)))?;
+    let groups = state
+        .github
+        .search_prs(&token, &login, force.unwrap_or(false))
+        .await?;
     Ok(groups)
 }
 
 #[tauri::command]
-pub fn sync_now(state: State<AppState>) -> AppResult<SyncStatus> {
+pub async fn sync_now(state: State<'_, AppState>) -> AppResult<SyncStatus> {
     let cfg = state.config.load()?;
     let token = cfg.github_token.clone().unwrap_or_default();
     let notes_repo = cfg.notes_repo.clone();
     state.refresh_notes()?;
-    state.sync.sync(&token, notes_repo.as_deref())?;
+    {
+        let sync = state.sync.clone();
+        let token = token.clone();
+        let notes_repo = notes_repo.clone();
+        tauri::async_runtime::spawn_blocking(move || sync.sync(&token, notes_repo.as_deref()))
+            .await
+            .map_err(|e| AppError::Sync(format!("sync task join: {e}")))??;
+    }
     let remote_configured = cfg.notes_repo.is_some();
     Ok(state.sync.status(remote_configured))
 }
