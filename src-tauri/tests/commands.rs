@@ -143,6 +143,43 @@ fn github_token_missing_returns_empty_prs() {
 }
 
 #[test]
+fn non_sync_config_saves_do_not_touch_git() {
+    let t = setup_app();
+    let cfg: models::AppConfig = get_config(t.app.state()).unwrap();
+
+    // Give the app a token + notes repo so a sync WOULD run if triggered,
+    // and a note so the sync-relevant save has something to commit.
+    std::fs::write(
+        std::path::Path::new(&cfg.vault_path).join("note.md"),
+        "---\ntitle: Test\n---\n\nhello",
+    )
+    .unwrap();
+    let mut updated = cfg.clone();
+    updated.github_token = Some("fake-token".into());
+    updated.notes_repo = Some("testuser/scratch-notes".into());
+    tauri::async_runtime::block_on(save_config(t.app.state(), updated.clone())).unwrap();
+
+    let mut themed = updated.clone();
+    themed.theme = "dark".into();
+    tauri::async_runtime::block_on(save_config(t.app.state(), themed)).unwrap();
+
+    let vault = std::path::Path::new(&updated.vault_path);
+    let head_before = git_head(&vault);
+    assert!(head_before.is_some(), "sync-relevant save should have committed");
+    assert_eq!(
+        git_head(&vault),
+        head_before,
+        "theme-only save must not create a new commit"
+    );
+}
+
+fn git_head(vault: &std::path::Path) -> Option<git2::Oid> {
+    let repo = git2::Repository::open(vault).ok()?;
+    let head = repo.head().ok()?;
+    head.peel_to_commit().ok().map(|c| c.id())
+}
+
+#[test]
 fn sync_status_idle_without_remote() {
     let t = setup_app();
     let status: models::SyncStatus = sync_status(t.app.state()).unwrap();

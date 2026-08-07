@@ -50,6 +50,17 @@ pub fn get_config(state: State<AppState>) -> AppResult<AppConfig> {
 
 #[tauri::command]
 pub async fn save_config(state: State<'_, AppState>, config: AppConfig) -> AppResult<()> {
+    // Only sync when sync-relevant fields changed (token / notes repo / vault
+    // path). Other config saves — theme, hidden orgs/repos, view mode — are
+    // local-only and must not trigger a network git sync, or every settings
+    // toggle would stall on a pull+push round-trip.
+    let sync_relevant_changed = {
+        let old = state.config.load()?;
+        old.github_token != config.github_token
+            || old.notes_repo != config.notes_repo
+            || old.vault_path != config.vault_path
+    };
+
     state.config.save(&config)?;
     state.refresh_notes()?;
     // Wire the origin remote as soon as a notes repo is chosen, so the first
@@ -57,7 +68,7 @@ pub async fn save_config(state: State<'_, AppState>, config: AppConfig) -> AppRe
     // thread so the first sync never freezes the UI.
     let token = config.github_token.clone().unwrap_or_default();
     let notes_repo = config.notes_repo.clone();
-    if !token.is_empty() && notes_repo.is_some() {
+    if sync_relevant_changed && !token.is_empty() && notes_repo.is_some() {
         // Best-effort background sync: wire origin + push immediately. Its
         // outcome (including errors) is surfaced via sync_status, not by
         // failing the config save.

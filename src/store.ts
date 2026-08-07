@@ -250,8 +250,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 			? cfg.hiddenOrgs.filter((o) => o !== org)
 			: [...cfg.hiddenOrgs, org];
 		const next = { ...cfg, hiddenOrgs };
-		await api.saveConfig(next);
+		// Optimistic: flip the switch immediately, persist in the background.
 		set({ config: next });
+		try {
+			await api.saveConfig(next);
+		} catch (e) {
+			// Revert on failure so the UI never lies about the saved state.
+			set({ config: cfg });
+			throw e;
+		}
 	},
 
 	toggleOrgFavorite: async (org) => {
@@ -261,8 +268,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 			? cfg.favoriteOrgs.filter((o) => o !== org)
 			: [...cfg.favoriteOrgs, org];
 		const next = { ...cfg, favoriteOrgs };
-		await api.saveConfig(next);
+		// Optimistic: flip the switch immediately, persist in the background.
 		set({ config: next });
+		try {
+			await api.saveConfig(next);
+		} catch (e) {
+			// Revert on failure so the UI never lies about the saved state.
+			set({ config: cfg });
+			throw e;
+		}
 	},
 
 	toggleRepoHidden: async (repo) => {
@@ -272,8 +286,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 			? cfg.hiddenRepos.filter((r) => r !== repo)
 			: [...cfg.hiddenRepos, repo];
 		const next = { ...cfg, hiddenRepos };
-		await api.saveConfig(next);
+		// Optimistic: flip the switch immediately, persist in the background.
 		set({ config: next });
+		try {
+			await api.saveConfig(next);
+		} catch (e) {
+			// Revert on failure so the UI never lies about the saved state.
+			set({ config: cfg });
+			throw e;
+		}
 	},
 
 	refreshSyncStatus: async () => {
