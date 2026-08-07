@@ -6,11 +6,10 @@ import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { ArrowUp01Icon, PlusSignIcon } from "hugeicons-react";
+import { PlusSignIcon } from "hugeicons-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import appIcon from "../assets/icon.png";
-import { cn } from "../lib/utils";
 import { useAppStore } from "../store";
 import { PrMention } from "./PrMention";
 import { SlashCommand } from "./SlashCommand";
@@ -22,7 +21,6 @@ export function Editor() {
 	const saveActive = useAppStore((s) => s.saveActive);
 	const createNote = useAppStore((s) => s.createNote);
 	const collapsed = useAppStore((s) => s.config?.toolbarCollapsed ?? false);
-	const persistToolbarCollapsed = useAppStore((s) => s.persistToolbarCollapsed);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const loadedNoteId = useRef<string | null>(null);
 
@@ -139,14 +137,6 @@ export function Editor() {
 					</button>
 				</div>
 			)}
-			<button
-				type="button"
-				title={collapsed ? "Show formatting toolbar" : "Hide formatting toolbar"}
-				onClick={() => void persistToolbarCollapsed(!collapsed)}
-				className="flex h-6 shrink-0 items-center justify-center gap-1 self-end border-t border-[var(--separator)] px-2 text-tertiary transition-colors hover:text-[var(--ink-secondary)]"
-			>
-				<ArrowUp01Icon className={cn("h-3 w-3", collapsed && "rotate-180")} />
-			</button>
 		</div>
 	);
 }

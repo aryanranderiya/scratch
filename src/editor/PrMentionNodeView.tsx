@@ -22,8 +22,8 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 
 	return (
 		<NodeViewWrapper
-			as="span"
-			className="pr-mention-view my-1 block w-full"
+			as="div"
+			className="pr-mention-view my-1 w-full"
 			contentEditable={false}
 		>
 			<PrRichCard

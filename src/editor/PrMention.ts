@@ -39,10 +39,10 @@ export const PrMentionPluginKey = new PluginKey("prMention");
 export const PrMention = Node.create({
 	name: "prMention",
 
-	group: "inline",
-	inline: true,
+	group: "block",
 	selectable: true,
 	atom: true,
+	draggable: true,
 
 	addOptions() {
 		return {
@@ -67,29 +67,24 @@ export const PrMention = Node.create({
 					range: { from: number; to: number };
 					props: PrItem;
 				}) => {
-					// Insert the mention as a standalone paragraph so the card
-					// renders full-width on its own line (Notion-style).
+					// Insert the mention as its own block so the card renders
+					// full-width and the caret can sit below it (Notion-style).
 					editor
 						.chain()
 						.focus()
 						.insertContentAt(range, [
 							{
-								type: "paragraph",
-								content: [
-									{
-										type: this.name,
-										attrs: {
-											id: props.id,
-											repo: props.repo,
-											org: props.org,
-											number: props.number,
-											title: props.title,
-											url: props.url,
-											checkStatus: props.checkStatus,
-											isDraft: props.isDraft,
-										},
-									},
-								],
+								type: this.name,
+								attrs: {
+									id: props.id,
+									repo: props.repo,
+									org: props.org,
+									number: props.number,
+									title: props.title,
+									url: props.url,
+									checkStatus: props.checkStatus,
+									isDraft: props.isDraft,
+								},
 							},
 							{ type: "paragraph" },
 						])
@@ -178,11 +173,12 @@ export const PrMention = Node.create({
 				serialize: (
 					state: {
 						write: (text: string) => void;
-						ensureNewLine: () => void;
+						closeBlock: (node: unknown) => void;
 					},
 					node: { attrs: PrMentionAttrs },
 				) => {
 					state.write(`[@${node.attrs.repo}#${node.attrs.number}](${node.attrs.url})`);
+					state.closeBlock(node);
 				},
 				parse: {
 					setup() {},

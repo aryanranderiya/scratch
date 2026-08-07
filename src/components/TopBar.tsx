@@ -1,4 +1,5 @@
 import {
+	ArrowUp01Icon,
 	Delete01Icon,
 	KanbanIcon,
 	MoreHorizontalIcon,
@@ -27,6 +28,8 @@ export function TopBar() {
 	const view = useAppStore((s) => s.view);
 	const setView = useAppStore((s) => s.setView);
 	const prGroups = useAppStore((s) => s.prGroups);
+	const config = useAppStore((s) => s.config);
+	const persistToolbarCollapsed = useAppStore((s) => s.persistToolbarCollapsed);
 
 	const allRepos = useMemo(() => {
 		const seen = new Set<string>();
@@ -121,6 +124,25 @@ export function TopBar() {
 							className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]"
 						>
 							<PlusSignIcon className="h-4 w-4" />
+						</button>
+						<button
+							type="button"
+							title={
+								config?.toolbarCollapsed
+									? "Show formatting toolbar"
+									: "Hide formatting toolbar"
+							}
+							onClick={() => void persistToolbarCollapsed(!config?.toolbarCollapsed)}
+							className={cn(
+								"flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+								config?.toolbarCollapsed
+									? "bg-[var(--accent-soft)] text-[var(--accent)]"
+									: "text-[var(--ink-secondary)] hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]",
+							)}
+						>
+							<ArrowUp01Icon
+								className={cn("h-4 w-4", config?.toolbarCollapsed && "rotate-180")}
+							/>
 						</button>
 						<Dropdown
 							trigger={
