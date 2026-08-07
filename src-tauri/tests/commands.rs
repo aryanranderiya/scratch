@@ -136,7 +136,7 @@ fn notes_persist_across_restart() {
 #[test]
 fn github_token_missing_returns_empty_prs() {
     let t = setup_app();
-    let prs: Vec<models::PrGroup> = search_prs(t.app.state()).unwrap();
+    let prs: Vec<models::PrGroup> = search_prs(t.app.state(), None).unwrap();
     assert!(prs.is_empty());
 }
 
@@ -235,4 +235,41 @@ fn config_migrates_missing_fields_from_old_file() {
     assert!(cfg.favorite_orgs.is_empty());
     assert_eq!(cfg.view_mode, "notes");
     assert!(!cfg.toolbar_collapsed);
+}
+
+#[test]
+fn sync_wires_remote_and_renames_master_to_main() {
+    let t = setup_app();
+
+    // Force a git repo on the vault with a master branch
+    let cfg: models::AppConfig = get_config(t.app.state()).unwrap();
+    let vault = std::path::PathBuf::from(&cfg.vault_path);
+    std::fs::create_dir_all(&vault).unwrap();
+    let repo = git2::Repository::init(&vault).unwrap();
+    {
+        let sig = git2::Signature::now("t", "t@t").unwrap();
+        let tree = repo.treebuilder(None).unwrap().write().unwrap();
+        let tree = repo.find_tree(tree).unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "init", &tree, &[]).unwrap();
+    }
+    drop(repo);
+
+    // Save a config with a notes repo so ensure_remote wires origin
+    let mut updated = cfg.clone();
+    updated.notes_repo = Some("testuser/scratch-notes".into());
+    updated.github_token = Some("fake-token".into());
+    updated.github_login = Some("testuser".into());
+    save_config(t.app.state(), updated.clone()).unwrap();
+
+    let repo = git2::Repository::open(&vault).unwrap();
+    let head = repo.head().unwrap();
+    let branch = head.shorthand().unwrap_or("").to_string();
+    // save_config triggers sync which should have renamed master -> main
+    assert_eq!(branch, "main");
+
+    let remote = repo.find_remote("origin").unwrap();
+    assert_eq!(
+        remote.url().unwrap_or(""),
+        "https://github.com/testuser/scratch-notes.git"
+    );
 }

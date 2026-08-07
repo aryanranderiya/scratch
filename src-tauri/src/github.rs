@@ -174,24 +174,27 @@ impl GithubClient {
         self: &Arc<Self>,
         token: &str,
         login: &str,
+        force: bool,
     ) -> AppResult<Vec<PrGroup>> {
-        if let Some(groups) = self.memory_cache_if_fresh(login) {
-            return Ok(groups);
-        }
+        if !force {
+            if let Some(groups) = self.memory_cache_if_fresh(login) {
+                return Ok(groups);
+            }
 
-        if let Some(disk) = self.load_disk_cache() {
-            if disk.login.as_deref() == Some(login) {
-                let age = Utc::now().timestamp() - disk.fetched_at;
-                if age < PR_CACHE_TTL_SECONDS {
-                    let groups = disk.groups;
-                    self.fill_memory(groups.clone(), disk.fetched_at, login);
-                    return Ok(groups);
-                }
-                if age < PR_CACHE_STALE_LIMIT_SECONDS {
-                    let groups = disk.groups;
-                    self.fill_memory(groups.clone(), disk.fetched_at, login);
-                    self.spawn_refresh_if_idle(token, login);
-                    return Ok(groups);
+            if let Some(disk) = self.load_disk_cache() {
+                if disk.login.as_deref() == Some(login) {
+                    let age = Utc::now().timestamp() - disk.fetched_at;
+                    if age < PR_CACHE_TTL_SECONDS {
+                        let groups = disk.groups;
+                        self.fill_memory(groups.clone(), disk.fetched_at, login);
+                        return Ok(groups);
+                    }
+                    if age < PR_CACHE_STALE_LIMIT_SECONDS {
+                        let groups = disk.groups;
+                        self.fill_memory(groups.clone(), disk.fetched_at, login);
+                        self.spawn_refresh_if_idle(token, login);
+                        return Ok(groups);
+                    }
                 }
             }
         }

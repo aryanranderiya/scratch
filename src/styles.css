@@ -164,6 +164,14 @@
 	line-height: 1.2;
 }
 
+.tiptap .scratch-image {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border-radius: 10px;
+	margin: 0.5rem 0;
+}
+
 .tiptap h2 {
 	font-size: 1.25rem;
 	font-weight: 700;

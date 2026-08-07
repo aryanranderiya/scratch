@@ -124,6 +124,61 @@ test("@ opens PR autocomplete grouped by state and inserts a card", async ({ pag
 	expect(stored[0].content).toContain("/pull/");
 });
 
+test("pasting an image saves it to the vault and inserts a markdown image", async ({ page }) => {
+	await page.goto("/");
+	await newNoteButton(page).click();
+	await page.waitForTimeout(300);
+
+	const editor = page.locator(".tiptap");
+	await editor.click();
+
+	// Simulate pasting an image file from the clipboard
+	await page.evaluate(() => {
+		const dt = new DataTransfer();
+		const file = new File([new Uint8Array([137, 80, 78, 71])], "shot.png", {
+			type: "image/png",
+		});
+		dt.items.add(file);
+		const evt = new Event("paste", { bubbles: true, cancelable: true });
+		Object.defineProperty(evt, "clipboardData", { value: dt });
+		document.querySelector(".tiptap")?.dispatchEvent(evt);
+	});
+
+	const img = page.locator(".tiptap img.scratch-image");
+	await expect(img).toHaveCount(1);
+	// Rendered through the scratch-asset:// URI scheme (vault-relative file)
+	await expect(img).toHaveAttribute("src", /^scratch-asset:\/\/scratch-assets\/mock-\d+\.png$/);
+
+	await page.waitForTimeout(1200);
+	const stored = await page.evaluate(() => {
+		const store = (window as unknown as { __store?: { notes: unknown[] } }).__store!;
+		return store.notes as Array<{ content: string }>;
+	});
+	// The note persists a portable relative path, not the URI scheme
+	expect(stored[0].content).toMatch(/!\[shot\.png\]\(scratch-assets\/mock-\d+\.png\)/);
+});
+
+test("cmd+a and ctrl+a select the whole note", async ({ page }) => {
+	await page.goto("/");
+	await newNoteButton(page).click();
+	await page.waitForTimeout(300);
+
+	const editor = page.locator(".tiptap");
+	await editor.click();
+	await editor.pressSequentially("line one\n\nline two");
+	await page.waitForTimeout(300);
+
+	for (const key of ["Meta+a", "Control+a"]) {
+		await page.keyboard.press(key);
+		await page.waitForTimeout(150);
+		const sel = await page.evaluate(() => window.getSelection()?.toString() ?? "");
+		expect(sel).toContain("line one");
+		expect(sel).toContain("line two");
+		await editor.click();
+		await page.waitForTimeout(150);
+	}
+});
+
 test("slash command opens the command menu", async ({ page }) => {
 	await page.goto("/");
 	await newNoteButton(page).click();

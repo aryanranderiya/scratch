@@ -27,6 +27,9 @@ export const api = {
 	getBoard: () => call<BoardState>("get_board"),
 	saveBoard: (board: BoardState) => call<void>("save_board", { board }),
 
+	saveImage: (bytes: number[], ext: string | null) =>
+		call<string>("save_image", { bytes, ext }),
+
 	getGithubUser: (token: string) => call<GithubUser>("get_github_user", { token }),
 	listOrgs: (token: string) => call<string[]>("list_orgs", { token }),
 	listUserRepos: (token: string) => call<RepoChoice[]>("list_user_repos", { token }),

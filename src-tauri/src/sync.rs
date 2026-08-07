@@ -40,6 +40,51 @@ impl SyncManager {
         }
     }
 
+    /// Ensure the local branch is `main` (rename from `master` if needed) so
+    /// pushes line up with GitHub's default branch.
+    fn ensure_main_branch(&self, repo: &Repository) -> AppResult<()> {
+        let head = repo.head().ok();
+        if let Some(head) = head {
+            if head.is_branch() {
+                let name = head.shorthand().unwrap_or("main").to_string();
+                if name == "master" {
+                    repo.reference(
+                        "refs/heads/main",
+                        head.peel_to_commit().map_err(|e| AppError::Git(e.to_string()))?.id(),
+                        true,
+                        "rename master to main",
+                    )
+                    .map_err(|e| AppError::Git(format!("rename branch: {e}")))?;
+                    repo.set_head("refs/heads/main")
+                        .map_err(|e| AppError::Git(format!("set head: {e}")))?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Set the `origin` remote to the configured notes repo, creating it if
+    /// missing. Returns Ok(false) when no notes repo is configured (local-only).
+    fn ensure_remote(&self, repo: &Repository, repo_url: Option<&str>) -> AppResult<bool> {
+        let Some(url) = repo_url.filter(|u| !u.is_empty()) else {
+            return Ok(false);
+        };
+        let remote_url = format!("https://github.com/{url}.git");
+        match repo.find_remote("origin") {
+            Ok(r) => {
+                if r.url().map(|u| u != remote_url).unwrap_or(true) {
+                    repo.remote_set_url("origin", &remote_url)
+                        .map_err(|e| AppError::Git(format!("set remote url: {e}")))?;
+                }
+            }
+            Err(_) => {
+                repo.remote("origin", &remote_url)
+                    .map_err(|e| AppError::Git(format!("add remote: {e}")))?;
+            }
+        }
+        Ok(true)
+    }
+
     fn is_dirty(&self, repo: &Repository) -> AppResult<bool> {
         let statuses = repo
             .statuses(None)
@@ -181,7 +226,7 @@ impl SyncManager {
         }
     }
 
-    pub fn sync(&self, token: &str) -> AppResult<bool> {
+    pub fn sync(&self, token: &str, notes_repo: Option<&str>) -> AppResult<bool> {
         {
             let mut s = self.syncing.lock().unwrap();
             if *s {
@@ -192,9 +237,10 @@ impl SyncManager {
 
         let result = (|| -> AppResult<bool> {
             let repo = self.ensure_repo()?;
+            self.ensure_main_branch(&repo)?;
             let committed = self.commit_all(&repo, "scratch: sync")?;
 
-            let has_remote = repo.find_remote("origin").is_ok();
+            let has_remote = self.ensure_remote(&repo, notes_repo)?;
             if has_remote {
                 self.pull_from_remote(token)?;
                 let repo2 = self.ensure_repo()?;

@@ -105,6 +105,8 @@ export const tauriMockInitScript = `
         case "save_board":
           store.board = args.board;
           return null;
+        case "save_image":
+          return "scratch-assets/mock-" + (store.nextId++) + "." + (args.ext || "png");
         case "list_orgs":
           return [];
         case "sync_now":

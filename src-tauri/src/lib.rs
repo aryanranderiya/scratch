@@ -45,6 +45,33 @@ pub fn build_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builde
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .register_uri_scheme_protocol("scratch-asset", |ctx, request| {
+            // Serve vault files (e.g. pasted images) as scratch-asset://<relative-path>
+            let state = ctx.app_handle().state::<AppState>();
+            let cfg = state.config.load().ok();
+            let vault = cfg
+                .as_ref()
+                .map(|c| std::path::PathBuf::from(&c.vault_path))
+                .unwrap_or_else(|| std::path::PathBuf::from("."));
+            let rel = request.uri().path().trim_start_matches('/');
+            let safe_rel: std::path::PathBuf = rel
+                .split('/')
+                .filter(|seg| !seg.is_empty() && *seg != "..")
+                .collect();
+            match std::fs::read(vault.join(&safe_rel)) {
+                Ok(bytes) => tauri::http::Response::builder()
+                    .header(
+                        tauri::http::header::CONTENT_TYPE,
+                        mime_guess::from_path(&safe_rel).first_or_octet_stream().essence_str(),
+                    )
+                    .body(bytes)
+                    .unwrap(),
+                Err(_) => tauri::http::Response::builder()
+                    .status(tauri::http::StatusCode::NOT_FOUND)
+                    .body(Vec::new())
+                    .unwrap(),
+            }
+        })
         .setup(|app| {
             init_state(&app.handle().clone());
 
@@ -66,6 +93,7 @@ pub fn build_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builde
             create_note,
             save_note,
             delete_note,
+            save_image,
             get_board,
             save_board,
             get_github_user,

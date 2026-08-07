@@ -159,17 +159,6 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 				data-scratch-popup="pr"
 				className="max-h-72 w-[min(400px,calc(100vw-2rem))] overflow-y-auto surface-raised rounded-xl p-1.5"
 			>
-				<div className="sticky top-0 z-10 flex items-center justify-end border-b border-[var(--separator)] bg-[var(--surface-raised)] px-1 py-1">
-					<button
-						type="button"
-						title="Refresh pull requests"
-						onMouseDown={(e) => e.stopPropagation()}
-						onClick={() => void refresh()}
-						className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]"
-					>
-						<Refresh01Icon className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-					</button>
-				</div>
 				{sections.map(({ label, prs }) => (
 					<div key={label}>
 						{label !== "Open · Passing" && (
@@ -194,6 +183,20 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 						})}
 					</div>
 				))}
+				<div className="mt-1 flex items-center justify-center border-t border-[var(--separator)] pt-1">
+					<button
+						type="button"
+						title={refreshing ? "Refreshing…" : "Refresh pull requests"}
+						onMouseDown={(e) => e.stopPropagation()}
+						onClick={() => void refresh()}
+						disabled={refreshing}
+						className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)] disabled:opacity-60"
+					>
+						<Refresh01Icon
+							className={cn("h-3.5 w-3.5", refreshing && "animate-spin")}
+						/>
+					</button>
+				</div>
 			</div>
 		);
 	},

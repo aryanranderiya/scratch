@@ -1,6 +1,6 @@
 use crate::board::BoardStore;
 use crate::config::ConfigStore;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::github::GithubClient;
 use crate::models::*;
 use crate::notes::NotesStore;
@@ -52,6 +52,13 @@ pub fn get_config(state: State<AppState>) -> AppResult<AppConfig> {
 pub fn save_config(state: State<AppState>, config: AppConfig) -> AppResult<()> {
     state.config.save(&config)?;
     state.refresh_notes()?;
+    // Wire the origin remote as soon as a notes repo is chosen, so the first
+    // autosave cycle syncs instead of silently staying local.
+    let token = config.github_token.clone().unwrap_or_default();
+    let notes_repo = config.notes_repo.clone();
+    if !token.is_empty() && notes_repo.is_some() {
+        let _ = state.sync.sync(&token, notes_repo.as_deref());
+    }
     Ok(())
 }
 
@@ -90,6 +97,27 @@ pub fn delete_note(state: State<AppState>, id: String) -> AppResult<()> {
     notes.delete(&id)
 }
 
+/// Persist a pasted image into the vault's asset folder and return the
+/// relative path (e.g. "scratch-assets/abc.png") for use in markdown.
+#[tauri::command]
+pub fn save_image(state: State<AppState>, bytes: Vec<u8>, ext: Option<String>) -> AppResult<String> {
+    let cfg = state.config.load()?;
+    let vault = std::path::PathBuf::from(&cfg.vault_path);
+    let assets = vault.join("scratch-assets");
+    std::fs::create_dir_all(&assets)
+        .map_err(|e| AppError::Io(format!("create assets dir: {e}")))?;
+
+    let ext = ext
+        .filter(|e| !e.is_empty())
+        .unwrap_or_else(|| "png".into())
+        .trim_start_matches('.')
+        .to_lowercase();
+    let filename = format!("{}.{}", uuid::Uuid::new_v4(), ext);
+    std::fs::write(assets.join(&filename), &bytes)
+        .map_err(|e| AppError::Io(format!("write image: {e}")))?;
+    Ok(format!("scratch-assets/{filename}"))
+}
+
 #[tauri::command]
 pub fn get_github_user(token: String) -> AppResult<GithubUser> {
     let client = GithubClient::new();
@@ -120,7 +148,7 @@ pub fn create_notes_repo(token: String) -> AppResult<String> {
 }
 
 #[tauri::command]
-pub fn search_prs(state: State<AppState>) -> AppResult<Vec<PrGroup>> {
+pub fn search_prs(state: State<AppState>, force: Option<bool>) -> AppResult<Vec<PrGroup>> {
     let cfg = state.config.load()?;
     let token = cfg.github_token.clone().unwrap_or_default();
     let login = cfg.github_login.clone().unwrap_or_default();
@@ -128,7 +156,7 @@ pub fn search_prs(state: State<AppState>) -> AppResult<Vec<PrGroup>> {
         return Ok(Vec::new());
     }
     let groups =
-        tauri::async_runtime::block_on(state.github.search_prs(&token, &login))?;
+        tauri::async_runtime::block_on(state.github.search_prs(&token, &login, force.unwrap_or(false)))?;
     Ok(groups)
 }
 
@@ -136,8 +164,9 @@ pub fn search_prs(state: State<AppState>) -> AppResult<Vec<PrGroup>> {
 pub fn sync_now(state: State<AppState>) -> AppResult<SyncStatus> {
     let cfg = state.config.load()?;
     let token = cfg.github_token.clone().unwrap_or_default();
+    let notes_repo = cfg.notes_repo.clone();
     state.refresh_notes()?;
-    state.sync.sync(&token)?;
+    state.sync.sync(&token, notes_repo.as_deref())?;
     let remote_configured = cfg.notes_repo.is_some();
     Ok(state.sync.status(remote_configured))
 }

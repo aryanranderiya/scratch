@@ -1,19 +1,54 @@
+import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { Extension } from "@tiptap/core";
+import { EditorContent, mergeAttributes, useEditor, type Editor as TiptapEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { PlusSignIcon } from "hugeicons-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import appIcon from "../assets/icon.png";
+import { api } from "../lib/api";
 import { useAppStore } from "../store";
 import { PrMention } from "./PrMention";
 import { SlashCommand } from "./SlashCommand";
 import { Toolbar } from "./Toolbar";
+
+// ProseMirror binds select-all to Mod-a (Cmd on macOS), leaving Ctrl+A unbound.
+// Map Control-a to the same command so Ctrl+A selects the whole note too.
+export const ControlSelectAll = Extension.create({
+	name: "controlSelectAll",
+
+	addKeyboardShortcuts() {
+		return {
+			"Control-a": ({ editor }) => {
+				editor.commands.selectAll();
+				return true;
+			},
+		};
+	},
+});
+
+/** Handle pasting image files: save to the vault and insert into the editor. */
+async function handleImagePaste(file: File, editor: TiptapEditor | null) {
+	if (!file.type.startsWith("image/")) return;
+	try {
+		const buf = new Uint8Array(await file.arrayBuffer());
+		const ext = file.type.split("/")[1] ?? "png";
+		const relPath = await api.saveImage(Array.from(buf), ext);
+		editor
+			?.chain()
+			.focus()
+			.setImage({ src: relPath, alt: file.name })
+			.run();
+	} catch (e) {
+		console.error("failed to save pasted image", e);
+	}
+}
 
 export function Editor() {
 	const active = useAppStore((s) => s.active);
@@ -23,6 +58,7 @@ export function Editor() {
 	const collapsed = useAppStore((s) => s.config?.toolbarCollapsed ?? false);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const loadedNoteId = useRef<string | null>(null);
+	const editorRef = useRef<TiptapEditor | null>(null);
 
 	const editor = useEditor({
 		extensions: [
@@ -40,11 +76,30 @@ export function Editor() {
 			TextAlign.configure({
 				types: ["heading", "paragraph"],
 			}),
+			Image.extend({
+				renderHTML({ HTMLAttributes }) {
+					const { src, ...rest } = HTMLAttributes;
+					return [
+						"img",
+						mergeAttributes(this.options.HTMLAttributes, {
+							...rest,
+							src: `scratch-asset://${src}`,
+						}),
+					];
+				},
+			}).configure({
+				inline: false,
+				allowBase64: false,
+				HTMLAttributes: {
+					class: "scratch-image",
+				},
+			}),
 			Placeholder.configure({
 				placeholder: "Type / for commands, or @ to link a pull request…",
 			}),
 			PrMention,
 			SlashCommand,
+			ControlSelectAll,
 			Markdown.configure({
 				html: false,
 				tightLists: true,
@@ -56,6 +111,19 @@ export function Editor() {
 		editorProps: {
 			attributes: {
 				class: "tiptap min-h-[60vh] focus:outline-none",
+			},
+			handlePaste: (_view, event) => {
+				const items = event.clipboardData?.items;
+				if (!items) return false;
+				for (const item of Array.from(items)) {
+					const file = item.getAsFile();
+					if (file?.type.startsWith("image/")) {
+						event.preventDefault();
+						void handleImagePaste(file, editorRef.current);
+						return true;
+					}
+				}
+				return false;
 			},
 		},
 		onUpdate: ({ editor }) => {
@@ -72,6 +140,11 @@ export function Editor() {
 			}, 800);
 		},
 	});
+
+	useEffect(() => {
+		if (!editor) return;
+		editorRef.current = editor;
+	}, [editor]);
 
 	useEffect(() => {
 		if (!editor || !active) return;
