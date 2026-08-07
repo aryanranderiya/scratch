@@ -57,6 +57,7 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 		};
 
 		const hiddenOrgs = config?.hiddenOrgs ?? [];
+		const hiddenRepos = config?.hiddenRepos ?? [];
 		const active = useAppStore((s) => s.active);
 		const linked = useMemo(
 			() => linkedPrIds(active?.content ?? ""),
@@ -65,7 +66,10 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 
 		const visibleItems = useMemo(() => {
 			const hidden = new Set(hiddenOrgs);
-			const filtered = items.filter((item) => !hidden.has(item.org));
+			const hiddenReposSet = new Set(hiddenRepos);
+			const filtered = items.filter(
+				(item) => !hidden.has(item.org) && !hiddenReposSet.has(item.repo),
+			);
 			// Most-ready first: passing CI, then failing, then idle, drafts last.
 			return [...filtered].sort((a, b) => {
 				const aIdx = SECTION_ORDER.indexOf(sectionLabel(a) ?? "");
@@ -73,7 +77,7 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 				if (aIdx !== bIdx) return aIdx - bIdx;
 				return a.repo.localeCompare(b.repo) || a.number - b.number;
 			});
-		}, [items, hiddenOrgs]);
+		}, [items, hiddenOrgs, hiddenRepos]);
 
 		const sections = useMemo(() => {
 			const map = new Map<string, PrItem[]>();

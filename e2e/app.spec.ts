@@ -240,6 +240,26 @@ test("deleting the last note shows the empty state, not a blank screen", async (
 	await expect(page.locator(".tiptap")).toBeVisible();
 });
 
+test("@ picker excludes PRs from repos in hiddenRepos", async ({ page }) => {
+	await page.goto("/");
+	await primeConfig(page, { hiddenRepos: ["theexperiencecompany/gaia"] });
+	await newNoteButton(page).click();
+	await page.waitForTimeout(300);
+
+	const editor = page.locator(".tiptap");
+	await editor.click();
+	await editor.pressSequentially("See ");
+	await editor.press("@");
+
+	const popup = page.locator("[data-scratch-popup='pr']");
+	await expect(popup).toBeVisible();
+	// The hidden repo's PRs are gone entirely…
+	await expect(popup.getByText(/gaia#897/)).toHaveCount(0);
+	await expect(popup.getByText("chore: release master", { exact: true })).toHaveCount(0);
+	// …while the same org's other repos still show.
+	await expect(popup.getByText(/pet-project#12/)).toBeVisible();
+});
+
 test("slash command opens the command menu", async ({ page }) => {
 	await page.goto("/");
 	await newNoteButton(page).click();

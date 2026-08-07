@@ -21,6 +21,7 @@ export const tauriMockInitScript = `
       syncIntervalSeconds: 180,
       theme: "system",
       hiddenOrgs: [],
+      hiddenRepos: [],
       favoriteOrgs: [],
       viewMode: "notes",
       toolbarCollapsed: false,

@@ -75,6 +75,7 @@ interface AppState {
 	saveBoard: (board: BoardState) => Promise<void>;
 	toggleOrgHidden: (org: string) => Promise<void>;
 	toggleOrgFavorite: (org: string) => Promise<void>;
+	toggleRepoHidden: (repo: string) => Promise<void>;
 	refreshSyncStatus: () => Promise<void>;
 	syncNow: () => Promise<void>;
 	saveConfig: (cfg: AppConfig) => Promise<void>;
@@ -260,6 +261,17 @@ export const useAppStore = create<AppState>((set, get) => ({
 			? cfg.favoriteOrgs.filter((o) => o !== org)
 			: [...cfg.favoriteOrgs, org];
 		const next = { ...cfg, favoriteOrgs };
+		await api.saveConfig(next);
+		set({ config: next });
+	},
+
+	toggleRepoHidden: async (repo) => {
+		const cfg = get().config;
+		if (!cfg) return;
+		const hiddenRepos = cfg.hiddenRepos.includes(repo)
+			? cfg.hiddenRepos.filter((r) => r !== repo)
+			: [...cfg.hiddenRepos, repo];
+		const next = { ...cfg, hiddenRepos };
 		await api.saveConfig(next);
 		set({ config: next });
 	},

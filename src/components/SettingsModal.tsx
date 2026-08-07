@@ -7,7 +7,7 @@ import {
 	RefreshIcon,
 	StarIcon,
 } from "hugeicons-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { openUrl } from "../lib/open";
 import type { AppConfig, RepoChoice } from "../lib/types";
@@ -42,6 +42,20 @@ export function SettingsModal() {
 	const syncNow = useAppStore((s) => s.syncNow);
 	const toggleOrgHidden = useAppStore((s) => s.toggleOrgHidden);
 	const toggleOrgFavorite = useAppStore((s) => s.toggleOrgFavorite);
+	const toggleRepoHidden = useAppStore((s) => s.toggleRepoHidden);
+	const prGroups = useAppStore((s) => s.prGroups);
+
+	// Repos that currently have open PRs, grouped by org — used for per-repo
+	// filtering of the @ picker (mirrors the picker's own data).
+	const reposByOrg = useMemo(() => {
+		const map = new Map<string, string[]>();
+		for (const group of prGroups) {
+			const repos = new Set<string>();
+			for (const pr of group.prs) repos.add(pr.repo);
+			map.set(group.org, [...repos].sort());
+		}
+		return map;
+	}, [prGroups]);
 
 	const [token, setToken] = useState("");
 	const [connecting, setConnecting] = useState(false);
@@ -336,62 +350,99 @@ export function SettingsModal() {
 				</SettingsCard>
 
 				{connected && config?.githubToken && (
-					<SettingsCard
-						title="Organizations"
-						description="Hidden orgs are excluded from PR search; favorites sort to the top."
-					>
-						{orgsLoading ? (
-							<div className="flex items-center gap-2 py-1 text-[13px] text-tertiary">
-								<Spinner className="h-3.5 w-3.5" />
-								Loading organizations...
-							</div>
-						) : (
-							<ul className="space-y-1">
-								{sortedOrgs.map((org) => {
-									const hidden = config.hiddenOrgs.includes(org);
-									const favorite = config.favoriteOrgs.includes(org);
-									return (
-										<li
-											key={org}
-											className="flex items-center justify-between gap-2 rounded-lg px-1 py-1"
-										>
-											<span className="min-w-0 truncate text-[13px]">{org}</span>
-											<span className="flex shrink-0 items-center gap-2">
-												<button
-													type="button"
-													role="switch"
-													aria-checked={!hidden}
-													title={hidden ? `Show ${org} in PR search` : `Hide ${org} from PR search`}
-													onClick={() => void toggleOrgHidden(org)}
-													className="flex h-6 w-10 items-center rounded-full transition-colors duration-200"
-													style={{
-														background: hidden ? "var(--surface-hover)" : "var(--accent)",
-														justifyContent: hidden ? "flex-start" : "flex-end",
-													}}
-												>
-													<span className="mx-0.5 h-5 w-5 rounded-full bg-white shadow-1" />
-												</button>
-												<Button
-													variant="ghost"
-													size="icon"
-													title={favorite ? "Unfavorite" : "Favorite"}
-													aria-label={`${favorite ? "Unfavorite" : "Favorite"} ${org}`}
-													onClick={() => void toggleOrgFavorite(org)}
-													className={
-														favorite
-															? "text-[var(--warning)] hover:text-[var(--warning)]"
-															: undefined
-													}
-												>
-													<StarIcon className="h-4 w-4" />
-												</Button>
-											</span>
-										</li>
-									);
-								})}
-							</ul>
-						)}
-					</SettingsCard>
+						<SettingsCard
+							title="Organizations"
+							description="Hidden orgs and repos are excluded from the @ PR picker; favorites sort to the top."
+						>
+							{orgsLoading ? (
+								<div className="flex items-center gap-2 py-1 text-[13px] text-tertiary">
+									<Spinner className="h-3.5 w-3.5" />
+									Loading organizations...
+								</div>
+							) : (
+								<ul className="space-y-1">
+									{sortedOrgs.map((org) => {
+										const hidden = config.hiddenOrgs.includes(org);
+										const favorite = config.favoriteOrgs.includes(org);
+										const orgRepos = reposByOrg.get(org) ?? [];
+										return (
+											<li key={org} className="rounded-lg px-1 py-1">
+												<div className="flex items-center justify-between gap-2">
+													<span className="min-w-0 truncate text-[13px]">{org}</span>
+													<span className="flex shrink-0 items-center gap-2">
+														<button
+															type="button"
+															role="switch"
+															aria-checked={!hidden}
+															title={hidden ? `Show ${org} in PR search` : `Hide ${org} from PR search`}
+															onClick={() => void toggleOrgHidden(org)}
+															className="flex h-6 w-10 items-center rounded-full transition-colors duration-200"
+															style={{
+																background: hidden ? "var(--surface-hover)" : "var(--accent)",
+																justifyContent: hidden ? "flex-start" : "flex-end",
+															}}
+														>
+															<span className="mx-0.5 h-5 w-5 rounded-full bg-white shadow-1" />
+														</button>
+														<Button
+															variant="ghost"
+															size="icon"
+															title={favorite ? "Unfavorite" : "Favorite"}
+															aria-label={`${favorite ? "Unfavorite" : "Favorite"} ${org}`}
+															onClick={() => void toggleOrgFavorite(org)}
+															className={
+																favorite
+																	? "text-[var(--warning)] hover:text-[var(--warning)]"
+																	: undefined
+															}
+														>
+															<StarIcon className="h-4 w-4" />
+														</Button>
+													</span>
+												</div>
+												{!hidden && orgRepos.length > 0 && (
+													<ul className="mt-1 space-y-0.5 border-l border-[var(--separator)] pl-3">
+														{orgRepos.map((repo) => {
+															const repoHidden = config.hiddenRepos.includes(repo);
+															return (
+																<li
+																	key={repo}
+																	className="flex items-center justify-between gap-2 py-0.5"
+																>
+																	<span className="min-w-0 truncate text-[12px] text-[var(--ink-secondary)]">
+																		{repo.replace(`${org}/`, "")}
+																	</span>
+																	<button
+																		type="button"
+																		role="switch"
+																		aria-checked={!repoHidden}
+																		title={
+																			repoHidden
+																				? `Show ${repo} in PR search`
+																				: `Hide ${repo} from PR search`
+																		}
+																		onClick={() => void toggleRepoHidden(repo)}
+																		className="flex h-5 w-8 items-center rounded-full transition-colors duration-200"
+																		style={{
+																			background: repoHidden
+																				? "var(--surface-hover)"
+																				: "var(--accent)",
+																			justifyContent: repoHidden ? "flex-start" : "flex-end",
+																		}}
+																	>
+																		<span className="mx-0.5 h-4 w-4 rounded-full bg-white shadow-1" />
+																	</button>
+																</li>
+															);
+														})}
+													</ul>
+												)}
+											</li>
+										);
+									})}
+								</ul>
+							)}
+						</SettingsCard>
 				)}
 
 				<SettingsCard title="Appearance">

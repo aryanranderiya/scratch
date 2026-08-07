@@ -54,6 +54,7 @@ fn config_roundtrip() {
         sync_interval_seconds: 300,
         theme: "dark".into(),
         hidden_orgs: Vec::new(),
+        hidden_repos: Vec::new(),
         favorite_orgs: Vec::new(),
         view_mode: "notes".into(),
         toolbar_collapsed: false,
@@ -181,12 +182,14 @@ fn config_defaults_include_new_fields() {
     let t = setup_app();
     let cfg: models::AppConfig = get_config(t.app.state()).unwrap();
     assert!(cfg.hidden_orgs.is_empty());
+    assert!(cfg.hidden_repos.is_empty());
     assert!(cfg.favorite_orgs.is_empty());
     assert_eq!(cfg.view_mode, "notes");
     assert!(!cfg.toolbar_collapsed);
 
     let mut updated = cfg.clone();
     updated.hidden_orgs = vec!["SomeOrg".into()];
+    updated.hidden_repos = vec!["SomeOrg/some-repo".into()];
     updated.favorite_orgs = vec!["theexperiencecompany".into()];
     updated.view_mode = "board".into();
     updated.toolbar_collapsed = true;
@@ -194,6 +197,7 @@ fn config_defaults_include_new_fields() {
 
     let reloaded: models::AppConfig = get_config(t.app.state()).unwrap();
     assert_eq!(reloaded.hidden_orgs, vec!["SomeOrg"]);
+    assert_eq!(reloaded.hidden_repos, vec!["SomeOrg/some-repo"]);
     assert_eq!(reloaded.favorite_orgs, vec!["theexperiencecompany"]);
     assert_eq!(reloaded.view_mode, "board");
     assert!(reloaded.toolbar_collapsed);
@@ -233,6 +237,7 @@ fn config_migrates_missing_fields_from_old_file() {
     assert_eq!(cfg.theme, "dark");
     // New fields defaulted
     assert!(cfg.hidden_orgs.is_empty());
+    assert!(cfg.hidden_repos.is_empty());
     assert!(cfg.favorite_orgs.is_empty());
     assert_eq!(cfg.view_mode, "notes");
     assert!(!cfg.toolbar_collapsed);

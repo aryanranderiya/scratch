@@ -6,6 +6,7 @@ export interface AppConfig {
 	syncIntervalSeconds: number;
 	theme: string;
 	hiddenOrgs: string[];
+	hiddenRepos: string[];
 	favoriteOrgs: string[];
 	viewMode: string;
 	toolbarCollapsed: boolean;
