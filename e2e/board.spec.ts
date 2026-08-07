@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 
 test("board view shows columns and PR cards, toggles back to notes", async ({ page }) => {
 	await page.goto("/");
-	await page.getByTitle("Board").click();
+	await page.getByTitle("Kanban").click();
 
 	for (const name of ["New", "In Progress", "Needs Review", "Manually Tested", "Done"]) {
 		await expect(page.getByText(name, { exact: true })).toBeVisible();
@@ -18,14 +18,14 @@ test("board view shows columns and PR cards, toggles back to notes", async ({ pa
 	await expect(page.getByText("#897")).toBeVisible();
 	await expect(page.getByText("#894")).toBeVisible();
 
-	await page.getByTitle("Notes", { exact: true }).click();
+	await page.getByTitle("Scratchpad", { exact: true }).click();
 	await expect(page.getByText("Untitled")).toBeVisible();
-	await expect(page.getByTitle("Board")).toBeVisible();
+	await expect(page.getByTitle("Kanban")).toBeVisible();
 });
 
 test("adds a column via the inline input", async ({ page }) => {
 	await page.goto("/");
-	await page.getByTitle("Board").click();
+	await page.getByTitle("Kanban").click();
 
 	await page.getByText("Add column").click();
 	const input = page.getByPlaceholder("New Column");
@@ -47,7 +47,7 @@ test("adds a column via the inline input", async ({ page }) => {
 
 test("drags a PR card between columns and persists the board", async ({ page }) => {
 	await page.goto("/");
-	await page.getByTitle("Board").click();
+	await page.getByTitle("Kanban").click();
 
 	const card = page.locator(".cursor-grab", { hasText: "gaia#897" });
 	await expect(card).toBeVisible();
@@ -95,7 +95,7 @@ test("drags a PR card between columns and persists the board", async ({ page }) 
 
 test("filters PRs by repo from the top bar and supports select all / none", async ({ page }) => {
 	await page.goto("/");
-	await page.getByTitle("Board").click();
+	await page.getByTitle("Kanban").click();
 
 	await expect(page.getByText("#897")).toBeVisible();
 	await expect(page.getByText("#12")).toBeVisible();

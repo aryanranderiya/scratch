@@ -1,4 +1,8 @@
-import { CancelCircleIcon, CheckmarkCircle02Icon, GitPullRequestIcon } from "hugeicons-react";
+import {
+	Cancel02Icon,
+	GitPullRequestIcon,
+	Tick02Icon,
+} from "hugeicons-react";
 import type { PrItem } from "../lib/types";
 import { cn } from "../lib/utils";
 
@@ -12,20 +16,22 @@ export function prIconColor(isDraft: boolean): string {
 
 export function PrIcon({
 	isDraft,
+	mentioned,
 	className,
 	color,
-}: { isDraft: boolean; className?: string; color?: string }) {
+}: { isDraft: boolean; mentioned?: boolean; className?: string; color?: string }) {
 	return (
 		<GitPullRequestIcon
 			className={cn("shrink-0", className)}
-			style={{ color: color ?? prIconColor(isDraft) }}
+			style={{ color: color ?? (mentioned ? "var(--accent)" : prIconColor(isDraft)) }}
 		/>
 	);
 }
 
 /**
- * CI status icon, distinct from the PR icon: green check for success, red
- * cross for failure, orange dot for pending, nothing when unknown.
+ * CI status icon, distinct from the PR icon: a plain green check for success,
+ * a plain red cross for failure, an orange dot for pending, nothing when
+ * unknown. Matches GitHub's bare CI marks (no circles).
  */
 export function CiStatusIcon({
 	status,
@@ -33,7 +39,7 @@ export function CiStatusIcon({
 }: { status: PrItem["checkStatus"]; className?: string }) {
 	if (status === "success") {
 		return (
-			<CheckmarkCircle02Icon
+			<Tick02Icon
 				className={cn("shrink-0", className)}
 				style={{ color: "var(--success)" }}
 			/>
@@ -41,7 +47,7 @@ export function CiStatusIcon({
 	}
 	if (status === "failure") {
 		return (
-			<CancelCircleIcon
+			<Cancel02Icon
 				className={cn("shrink-0", className)}
 				style={{ color: "var(--danger)" }}
 			/>
@@ -91,16 +97,18 @@ export function PrRichCard({
 	selected,
 	onSelect,
 	onMouseEnter,
+	mentioned,
 	variant = "row",
 }: {
 	pr: PrItem;
 	selected?: boolean;
 	onSelect?: () => void;
 	onMouseEnter?: () => void;
+	mentioned?: boolean;
 	variant?: "row" | "card";
 }) {
 	if (variant === "card") {
-		const prColor = prIconColor(pr.isDraft);
+		const prColor = mentioned ? "var(--accent)" : prIconColor(pr.isDraft);
 		return (
 			<span
 				className="pr-mention-card flex w-full cursor-pointer items-start justify-start gap-2.5 rounded-2xl bg-[var(--surface-muted)] p-2 transition-colors hover:bg-[var(--surface-hover)]"
@@ -119,7 +127,7 @@ export function PrRichCard({
 					className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
 					style={{ background: `color-mix(in oklab, ${prColor} 12%, transparent)` }}
 				>
-					<PrIcon isDraft={pr.isDraft} className="h-3.5 w-3.5" />
+					<PrIcon isDraft={pr.isDraft} mentioned={mentioned} className="h-3.5 w-3.5" />
 				</span>
 				<span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
 					<span className="line-clamp-2 text-[12.5px] font-medium leading-snug text-[var(--ink)]">
@@ -128,6 +136,11 @@ export function PrRichCard({
 					<span className="flex items-center gap-1.5">
 						<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
 						<CiStatusIcon status={pr.checkStatus} className="h-3 w-3" />
+						{mentioned && (
+							<span className="rounded-md bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--accent)]">
+								Linked
+							</span>
+						)}
 						{pr.isDraft && (
 							<span className="rounded-md bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
 								Draft
@@ -155,7 +168,7 @@ export function PrRichCard({
 					: "hover:bg-[color-mix(in_oklab,var(--ink)_9%,transparent)]",
 			)}
 		>
-			<PrIcon isDraft={pr.isDraft} className="h-4 w-4" />
+			<PrIcon isDraft={pr.isDraft} mentioned={mentioned} className="h-4 w-4" />
 			<div className="min-w-0 flex-1">
 				<div className="truncate text-[13px] text-[var(--ink)]">{pr.title}</div>
 				<div className="flex items-center gap-1.5">
@@ -163,6 +176,11 @@ export function PrRichCard({
 					<CiStatusIcon status={pr.checkStatus} className="h-3 w-3" />
 				</div>
 			</div>
+			{mentioned && (
+				<span className="shrink-0 rounded-md bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+					Linked
+				</span>
+			)}
 			{pr.isDraft && (
 				<span className="shrink-0 rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-tertiary">
 					Draft

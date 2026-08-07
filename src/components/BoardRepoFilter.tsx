@@ -46,21 +46,18 @@ export function BoardRepoFilter({ allRepos }: { allRepos: string[] }) {
 		<div ref={ref} className="relative">
 			<button
 				type="button"
-				title="Filter repos"
+				title={hiddenRepos.length > 0 ? "Filter repos (hidden applied)" : "Filter repos"}
 				onClick={() => setOpen((o) => !o)}
 				className={cn(
-					"flex h-7 items-center gap-1 rounded-md px-2 text-[12px] font-medium transition-colors",
+					"relative flex h-7 w-7 items-center justify-center rounded-md transition-colors",
 					open || hiddenRepos.length > 0
 						? "text-[var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)]"
 						: "text-[var(--ink-secondary)] hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]",
 				)}
 			>
-				<FilterIcon className="h-3.5 w-3.5" />
-				Repos
+				<FilterIcon className="h-4 w-4" />
 				{hiddenRepos.length > 0 && (
-					<span className="rounded-full bg-[var(--accent-soft)] px-1.5 text-[10px] font-semibold text-[var(--accent)]">
-						{hiddenRepos.length}
-					</span>
+					<span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
 				)}
 			</button>
 			{open && (

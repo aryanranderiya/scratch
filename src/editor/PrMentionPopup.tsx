@@ -1,7 +1,20 @@
+import { Refresh01Icon } from "hugeicons-react";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { cn } from "../lib/utils";
 import type { PrItem } from "../lib/types";
 import { useAppStore } from "../store";
 import { PrRichCard } from "./PrRichCard";
+
+/** Extract already-linked PR ids ("org/repo#123") from a note's markdown. */
+function linkedPrIds(markdown: string): Set<string> {
+	const ids = new Set<string>();
+	const re = /\[@([\w.-]+\/[\w.-]+)#(\d+)\]\(https:\/\/github\.com\//g;
+	let m: RegExpExecArray | null;
+	while ((m = re.exec(markdown)) !== null) {
+		ids.add(`${m[1]}#${m[2]}`);
+	}
+	return ids;
+}
 
 export interface PrPopupHandle {
 	onKeyDown: (event: KeyboardEvent) => boolean;
@@ -31,10 +44,25 @@ const SECTION_ORDER = ["Open · Passing", "Open · Failing", "Open · Idle", "Dr
 export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 	function PrMentionPopup({ items, command, query, loading }, ref) {
 		const [selectedIndex, setSelectedIndex] = useState(0);
+		const [refreshing, setRefreshing] = useState(false);
 		const listRef = useRef<HTMLDivElement>(null);
 		const config = useAppStore((s) => s.config);
 
+		const refresh = async () => {
+			setRefreshing(true);
+			try {
+				await useAppStore.getState().refreshPrs();
+			} finally {
+				setRefreshing(false);
+			}
+		};
+
 		const hiddenOrgs = config?.hiddenOrgs ?? [];
+		const active = useAppStore((s) => s.active);
+		const linked = useMemo(
+			() => linkedPrIds(active?.content ?? ""),
+			[active?.content],
+		);
 
 		const visibleItems = useMemo(() => {
 			const hidden = new Set(hiddenOrgs);
@@ -131,6 +159,17 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 				data-scratch-popup="pr"
 				className="max-h-72 w-[min(400px,calc(100vw-2rem))] overflow-y-auto surface-raised rounded-xl p-1.5"
 			>
+				<div className="sticky top-0 z-10 flex items-center justify-end border-b border-[var(--separator)] bg-[var(--surface-raised)] px-1 py-1">
+					<button
+						type="button"
+						title="Refresh pull requests"
+						onMouseDown={(e) => e.stopPropagation()}
+						onClick={() => void refresh()}
+						className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]"
+					>
+						<Refresh01Icon className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+					</button>
+				</div>
 				{sections.map(({ label, prs }) => (
 					<div key={label}>
 						{label !== "Open · Passing" && (
@@ -146,6 +185,7 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 									<PrRichCard
 										pr={item}
 										selected={selected}
+										mentioned={linked.has(item.id)}
 										onSelect={() => command(item)}
 										onMouseEnter={() => setSelectedIndex(idx)}
 									/>

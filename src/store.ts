@@ -70,6 +70,7 @@ interface AppState {
 	togglePin: (id: string) => Promise<void>;
 
 	loadPrs: () => Promise<void>;
+	refreshPrs: () => Promise<void>;
 	loadBoard: () => Promise<void>;
 	saveBoard: (board: BoardState) => Promise<void>;
 	toggleOrgHidden: (org: string) => Promise<void>;
@@ -212,7 +213,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 	loadPrs: async () => {
 		set({ prsLoading: true });
 		try {
-			const prGroups = await api.searchPrs();
+			const prGroups = await api.searchPrs(false);
+			set({ prGroups, prsLoading: false });
+		} catch (e) {
+			set({ prsLoading: false });
+			throw e;
+		}
+	},
+
+	refreshPrs: async () => {
+		set({ prsLoading: true });
+		try {
+			const prGroups = await api.searchPrs(true);
 			set({ prGroups, prsLoading: false });
 		} catch (e) {
 			set({ prsLoading: false });

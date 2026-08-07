@@ -2,6 +2,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
 	CheckmarkCircle01Icon,
 	CloudIcon,
+	GithubIcon,
 	PlusSignIcon,
 	RefreshIcon,
 	StarIcon,
@@ -216,7 +217,15 @@ export function SettingsModal() {
 						<div className="flex items-center justify-between rounded-xl bg-[var(--surface-muted)] px-3 py-2.5">
 							<div>
 								<div className="text-[13px] font-medium">Notes repo</div>
-								<div className="text-[12px] text-tertiary">{config.notesRepo}</div>
+								<button
+									type="button"
+									title={`Open ${config.notesRepo} on GitHub`}
+									onClick={() => void openUrl(`https://github.com/${config.notesRepo}`)}
+									className="group flex items-center gap-1 text-[12px] text-tertiary transition-colors hover:text-[var(--accent)]"
+								>
+									{config.notesRepo}
+									<GithubIcon className="h-3 w-3 transition-colors group-hover:text-[var(--accent)]" />
+								</button>
 							</div>
 							<Button variant="secondary" size="sm" onClick={() => void useRepo("")}>
 								Disconnect

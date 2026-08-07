@@ -86,10 +86,10 @@ test("no crash when toggling board view and pinning notes", async ({ page }) => 
 	expect(content).toContain("pin me note content");
 
 	// Switch to board view and back — no crash
-	await page.getByTitle("Board", { exact: true }).click();
+	await page.getByTitle("Kanban", { exact: true }).click();
 	await page.waitForTimeout(300);
 	await expect(page.getByText("In Progress")).toBeVisible();
-	await page.getByTitle("Notes", { exact: true }).click();
+	await page.getByTitle("Scratchpad", { exact: true }).click();
 	await page.waitForTimeout(300);
 	await expect(editor).toBeVisible();
 

@@ -16,7 +16,7 @@ test("boots into the compact scratchpad with unified top bar", async ({ page }) 
 	const header = page.locator("header");
 	await expect(header.getByTitle("Note options")).toBeVisible();
 	await expect(header.getByTitle("New note")).toBeVisible();
-	await expect(header.getByTitle("Board")).toBeVisible();
+	await expect(header.getByTitle("Kanban")).toBeVisible();
 	await expect(header.getByTitle("All notes")).toBeVisible();
 	await expect(header.getByText("Untitled")).toBeVisible();
 });
@@ -97,7 +97,7 @@ test("@ opens PR autocomplete grouped by state and inserts a card", async ({ pag
 	await expect(popup.locator('[style*="var(--danger)"]').first()).toBeVisible();
 	await expect(popup.getByText("Draft", { exact: true })).toBeVisible();
 
-	await popup.locator("button").first().click();
+	await popup.locator("button[title='chore: release master']").click();
 
 	await page.waitForTimeout(300);
 	const mention = page.locator(".tiptap .pr-mention-card").first();
@@ -170,4 +170,32 @@ test("hides PRs from orgs listed in hiddenOrgs config", async ({ page }) => {
 	await expect(popup.getByText(/pet-project/)).toHaveCount(0);
 	await expect(popup.getByText(/gaia#897/)).toBeVisible();
 	await expect(popup.getByText("chore: release master")).toBeVisible();
+});
+
+test("@ picker marks already-linked PRs with a Linked chip", async ({ page }) => {
+	await page.goto("/");
+	await page.locator("header button[title='New note']").click();
+	await page.waitForTimeout(300);
+	const editor = page.locator(".tiptap");
+	await editor.click();
+	// Link gaia#897 first (serializes to the mention markdown)
+	await editor.pressSequentially("See ");
+	await editor.press("@");
+	const popup = page.locator("[data-scratch-popup='pr']");
+	await popup.waitFor({ state: "visible" });
+	await popup.locator("button[title='chore: release master']").click();
+	await page.waitForTimeout(1000); // autosave
+
+	// Open the picker again — the already-linked PR shows a Linked chip
+	await editor.pressSequentially(" and ");
+	await editor.press("@");
+	await popup.waitFor({ state: "visible" });
+	await expect(popup.getByText("Linked", { exact: true })).toBeVisible();
+	// The linked PR's icon is accent-blue
+	const linkedRow = popup.locator("button[title='chore: release master']");
+	await expect(linkedRow.locator('[style*="var(--accent)"]').first()).toBeVisible();
+	// Non-linked PRs have no Linked chip
+	await expect(
+		popup.locator("button[title^='fix(web)']").getByText("Linked", { exact: true }),
+	).toHaveCount(0);
 });

@@ -167,7 +167,7 @@ function CardBody({ pr }: { pr: PrItem }) {
 						Draft
 					</span>
 				)}
-				<CiStatusIcon status={pr.checkStatus} className="h-3.5 w-3.5" />
+				<CiStatusIcon status={pr.checkStatus} className="h-3 w-3" />
 			</div>
 			<p className="line-clamp-2 text-[13px] font-medium leading-snug">{pr.title}</p>
 		</div>
@@ -210,6 +210,8 @@ interface ColumnProps {
 	onRenameCancel: () => void;
 	onStartRename: () => void;
 	onOpenMenu: (e: ReactMouseEvent<HTMLButtonElement>) => void;
+	width: number;
+	onResize: (dx: number) => void;
 }
 
 function Column({
@@ -223,15 +225,40 @@ function Column({
 	onRenameCancel,
 	onStartRename,
 	onOpenMenu,
+	width,
+	onResize,
 }: ColumnProps) {
 	const { setNodeRef, isOver } = useDroppable({ id: column.id });
+	const resizing = useRef(false);
+	const startX = useRef(0);
+	const startWidth = useRef(0);
+
+	const startResize = (e: ReactMouseEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
+		resizing.current = true;
+		startX.current = e.clientX;
+		startWidth.current = width;
+		const onMove = (ev: MouseEvent) => {
+			if (resizing.current) onResize(ev.clientX - startX.current);
+		};
+		const onUp = () => {
+			resizing.current = false;
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+	};
+
 	return (
 		<div
 			ref={setNodeRef}
 			className={cn(
-				"flex w-[240px] shrink-0 flex-col rounded-xl transition-colors",
+				"group relative flex shrink-0 flex-col rounded-xl transition-colors",
 				isOver && "bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]",
 			)}
+			style={{ width }}
 		>
 			<header className="flex h-8 shrink-0 items-center gap-1.5 px-1">
 				<span className="h-2 w-2 shrink-0 rounded-full" style={{ background: column.color }} />
@@ -262,13 +289,15 @@ function Column({
 						{column.name}
 					</button>
 				)}
-				<span className="shrink-0 text-[11px] text-tertiary">{cardIds.length}</span>
+				{cardIds.length > 0 && (
+					<span className="shrink-0 text-[11px] text-tertiary">{cardIds.length}</span>
+				)}
 				<button
 					type="button"
 					title="Column options"
 					onMouseDown={(e) => e.stopPropagation()}
 					onClick={onOpenMenu}
-					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--ink-secondary)] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]"
+					className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--ink-secondary)] opacity-0 transition-opacity hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)] group-hover:opacity-100"
 				>
 					<MoreHorizontalIcon className="h-3.5 w-3.5" />
 				</button>
@@ -288,6 +317,12 @@ function Column({
 					</div>
 				</SortableContext>
 			</div>
+			<div
+				role="separator"
+				title="Resize column"
+				onMouseDown={startResize}
+				className="absolute -right-1 top-0 h-full w-2 cursor-col-resize opacity-0 transition-opacity hover:opacity-100"
+			/>
 		</div>
 	);
 }
@@ -478,6 +513,17 @@ export function Board() {
 	const orderedRef = useRef(ordered);
 	orderedRef.current = ordered;
 
+	const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+	const columnWidthsRef = useRef(columnWidths);
+	columnWidthsRef.current = columnWidths;
+
+	const resizeColumn = (colId: string, dx: number) => {
+		const current = columnWidthsRef.current[colId] ?? 240;
+		const next = Math.min(420, Math.max(180, current + dx));
+		if (next === current) return;
+		setColumnWidths((prev) => ({ ...prev, [colId]: next }));
+	};
+
 	useLayoutEffect(() => {
 		const next = reconcileOrdered(orderedRef.current, board, visiblePrs);
 		if (!ordersEqual(orderedRef.current, next)) {
@@ -667,6 +713,8 @@ export function Board() {
 									setRenameDraft(col.name);
 								}}
 								onOpenMenu={(e) => openMenu(e, col.id)}
+								width={columnWidths[col.id] ?? 240}
+								onResize={(dx) => resizeColumn(col.id, dx)}
 							/>
 						))}
 						{adding ? (

@@ -31,7 +31,7 @@ export const api = {
 	listOrgs: (token: string) => call<string[]>("list_orgs", { token }),
 	listUserRepos: (token: string) => call<RepoChoice[]>("list_user_repos", { token }),
 	createNotesRepo: (token: string) => call<string>("create_notes_repo", { token }),
-	searchPrs: () => call<PrGroup[]>("search_prs"),
+	searchPrs: (force = false) => call<PrGroup[]>("search_prs", { force }),
 
 	syncNow: () => call<SyncStatus>("sync_now"),
 	syncStatus: () => call<SyncStatus>("sync_status"),
