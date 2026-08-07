@@ -36,6 +36,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { PrRepoRef } from "../editor/PrRichCard";
 import { openUrl } from "../lib/open";
 import type { BoardColumn, BoardState, PrItem } from "../lib/types";
 import { cn, uid } from "../lib/utils";
@@ -148,8 +149,8 @@ function CardBody({ pr }: { pr: PrItem }) {
 						)}
 					/>
 				</span>
-				<span className="min-w-0 flex-1 truncate font-mono text-[11px] text-tertiary">
-					{pr.repo}#{pr.number}
+				<span className="min-w-0 flex-1 truncate text-[11px] text-tertiary">
+					<PrRepoRef pr={pr} />
 				</span>
 				{pr.isDraft && (
 					<span className="shrink-0 rounded bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
@@ -178,7 +179,7 @@ function SortableCard({ pr }: { pr: PrItem }) {
 				transition: isDragging ? undefined : transition,
 			}}
 			className={cn(
-				"glass-soft cursor-grab rounded-xl p-2.5 shadow-1 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]",
+				"surface-raised cursor-grab rounded-xl p-2.5 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]",
 				isDragging && "opacity-0",
 			)}
 		>
@@ -379,7 +380,7 @@ function ColumnMenu({ menu, columns, onRename, onRecolor, onDelete, onClose }: C
 		>
 			<div
 				ref={ref}
-				className="glass-strong w-44 rounded-xl p-1 shadow-3"
+				className="surface-raised w-44 rounded-xl p-1"
 				style={{ animation: "menu-in 0.12s ease-out" }}
 			>
 				<button
@@ -691,7 +692,7 @@ export function Board() {
 					<DragOverlay>
 						{overlayPr && (
 							<div className="w-[232px]">
-								<div className="glass-strong rounded-xl p-2.5 shadow-2">
+								<div className="surface-raised rounded-xl p-2.5">
 									<CardBody pr={overlayPr} />
 								</div>
 							</div>

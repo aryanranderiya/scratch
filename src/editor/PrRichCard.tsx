@@ -29,6 +29,25 @@ export function PrIcon({
 }
 
 /**
+ * "org/repo #123" with the PR number in the accent color, separated from the
+ * repo name. Used everywhere a PR reference is shown.
+ */
+export function PrRepoRef({
+	pr,
+	className,
+	numberClassName,
+}: { pr: PrItem; className?: string; numberClassName?: string }) {
+	return (
+		<span className={cn("inline-flex items-baseline gap-1", className)}>
+			<span className="truncate">{pr.repo}</span>
+			<span className={cn("shrink-0 font-semibold text-[var(--accent)]", numberClassName)}>
+				#{pr.number}
+			</span>
+		</span>
+	);
+}
+
+/**
  * Shared rich PR content used by both the @ autocomplete popup and the inline
  * prMention node, so the editor shows the same content you picked.
  *
@@ -55,9 +74,7 @@ export function PrRichCard({
 				<span className="max-w-[16em] truncate text-[12.5px] font-medium text-[var(--ink)]">
 					{pr.title}
 				</span>
-				<span className="shrink-0 font-mono text-[11px] text-tertiary">
-					{pr.repo}#{pr.number}
-				</span>
+				<PrRepoRef pr={pr} className="shrink-0 text-[11px] text-tertiary" />
 			</span>
 		);
 	}
@@ -78,9 +95,7 @@ export function PrRichCard({
 			<PrIcon status={pr.checkStatus} className="h-4 w-4" />
 			<div className="min-w-0 flex-1">
 				<div className="truncate text-[13px] text-[var(--ink)]">{pr.title}</div>
-				<div className="truncate text-[11px] text-tertiary">
-					{pr.repo}#{pr.number}
-				</div>
+				<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
 			</div>
 			{pr.isDraft && (
 				<span className="shrink-0 rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-tertiary">

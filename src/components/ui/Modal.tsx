@@ -75,10 +75,10 @@ export function Modal({ open, onClose, title, children, width = "max-w-md" }: Mo
 				if (e.target === e.currentTarget) onClose();
 			}}
 		>
-			<div className="absolute inset-0 bg-black/20 backdrop-blur-[4px]" />
+			<div className="absolute inset-0 bg-black/30" />
 			<div
 				ref={panelRef}
-				className={`relative flex max-h-[calc(100vh-2rem)] w-full flex-col ${width} glass-strong rounded-2xl p-5 shadow-3`}
+				className={`relative flex max-h-[calc(100vh-2rem)] w-full flex-col ${width} surface-raised rounded-2xl p-5`}
 				style={{ animation: "scale-in 0.15s ease-out" }}
 				tabIndex={-1}
 			>

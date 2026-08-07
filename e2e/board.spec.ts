@@ -103,8 +103,8 @@ test("filters PRs by repo from the top bar and supports select all / none", asyn
 	// Hide one repo via the filter menu in the top bar
 	await page.getByTitle("Filter repos").click();
 	await page
-		.locator("[class*='glass-strong']")
-		.getByText("testuser/pet-project", { exact: true })
+		.locator("[class*='surface-raised']")
+		.getByRole("button", { name: "testuser/pet-project", exact: true })
 		.click();
 	await page.mouse.click(5, 5); // close the popover
 

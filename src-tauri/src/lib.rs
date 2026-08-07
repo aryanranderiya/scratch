@@ -51,14 +51,7 @@ pub fn build_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builde
             #[cfg(target_os = "macos")]
             {
                 use tauri::Manager;
-                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = apply_vibrancy(
-                        &window,
-                        NSVisualEffectMaterial::HudWindow,
-                        None,
-                        Some(16.0),
-                    );
                     let _ = window.set_shadow(true);
                     position_bottom_right(&window);
                 }

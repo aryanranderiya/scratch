@@ -44,7 +44,7 @@ export function Sidebar() {
 
 	return (
 		<div
-			className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px]"
+			className="fixed inset-0 z-40 bg-black/30"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget) setOpen(false);
 			}}

@@ -69,7 +69,7 @@ export function Dropdown({ trigger, items, align = "right", width = "w-48" }: Dr
 			{open && (
 				<div
 					className={cn(
-						"glass-strong absolute top-full z-50 mt-1 rounded-xl p-1 shadow-3",
+						"surface-raised absolute top-full z-50 mt-1 rounded-xl p-1 shadow-3",
 						width,
 						align === "right" ? "right-0" : "left-0",
 					)}

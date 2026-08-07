@@ -87,7 +87,7 @@ export function Onboarding() {
 	return (
 		<div className="flex h-full items-center justify-center p-5">
 			<div
-				className="glass-strong w-full max-w-sm rounded-2xl p-6 shadow-3"
+				className="surface-raised w-full max-w-sm rounded-2xl p-6 shadow-3"
 				style={{ animation: "scale-in 0.2s ease-out" }}
 			>
 				<div className="mb-6 flex items-center gap-3">

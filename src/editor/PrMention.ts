@@ -208,7 +208,12 @@ export const PrMention = Node.create({
 				],
 			],
 			["span", { class: "pr-mention-title" }, attrs.title],
-			["span", { class: "pr-mention-repo" }, `${attrs.repo}#${attrs.number}`],
+			[
+				"span",
+				{ class: "pr-mention-ref" },
+				["span", { class: "pr-mention-repo" }, attrs.repo],
+				["span", { class: "pr-mention-number" }, `#${attrs.number}`],
+			],
 		];
 	},
 

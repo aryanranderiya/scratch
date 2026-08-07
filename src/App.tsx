@@ -36,7 +36,7 @@ export default function App() {
 	}
 
 	return (
-		<div className="glass flex h-full flex-col overflow-hidden">
+		<div className="flex h-full flex-col overflow-hidden bg-[var(--surface)]">
 			<TopBar />
 			<main className="min-h-0 flex-1">{view === "board" ? <Board /> : <Editor />}</main>
 			<Sidebar />

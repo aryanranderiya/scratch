@@ -23,7 +23,7 @@ function SettingsCard({
 	children,
 }: { title: string; description?: string; children: React.ReactNode }) {
 	return (
-		<section className="glass-soft space-y-3 rounded-xl p-4">
+		<section className="surface-muted space-y-3 rounded-xl p-4">
 			<div>
 				<h3 className="text-[13px] font-semibold text-[var(--ink)]">{title}</h3>
 				{description && <p className="mt-0.5 text-[11px] text-tertiary">{description}</p>}

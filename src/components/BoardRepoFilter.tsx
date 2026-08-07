@@ -65,7 +65,7 @@ export function BoardRepoFilter({ allRepos }: { allRepos: string[] }) {
 			</button>
 			{open && (
 				<div
-					className="glass-strong absolute left-0 top-full z-50 mt-1 w-64 rounded-xl p-1.5 shadow-3"
+					className="surface-raised absolute left-0 top-full z-50 mt-1 w-64 rounded-xl p-1.5 shadow-3"
 					style={{ animation: "menu-in 0.12s ease-out" }}
 				>
 					<div className="flex items-center justify-between px-2.5 pb-1 pt-1">

@@ -19,12 +19,13 @@
         "minWidth": 320,
         "minHeight": 360,
         "resizable": true,
-        "transparent": true,
+        "transparent": false,
         "shadow": true,
         "titleBarStyle": "Overlay",
         "center": false,
         "decorations": true,
-        "visible": true
+        "visible": true,
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {
