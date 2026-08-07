@@ -1,9 +1,10 @@
-import { type Editor, Node, mergeAttributes } from "@tiptap/core";
+import { type Editor, Node } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
-import { ReactRenderer } from "@tiptap/react";
+import { ReactNodeViewRenderer, ReactRenderer } from "@tiptap/react";
 import { Suggestion, type SuggestionProps } from "@tiptap/suggestion";
 import type { PrGroup, PrItem } from "../lib/types";
 import { useAppStore } from "../store";
+import { PrMentionNodeView } from "./PrMentionNodeView";
 import { PrMentionPopup } from "./PrMentionPopup";
 
 export interface PrMentionAttrs {
@@ -14,6 +15,7 @@ export interface PrMentionAttrs {
 	title: string;
 	url: string;
 	checkStatus: string | null;
+	isDraft: boolean;
 }
 
 function allPrs(groups: PrGroup[]): PrItem[] {
@@ -79,6 +81,7 @@ export const PrMention = Node.create({
 									title: props.title,
 									url: props.url,
 									checkStatus: props.checkStatus,
+									isDraft: props.isDraft,
 								},
 							},
 							{ type: "text", text: " " },
@@ -142,6 +145,15 @@ export const PrMention = Node.create({
 			title: { ...dataAttr("title"), default: null },
 			url: { ...dataAttr("url"), default: null },
 			checkStatus: { ...dataAttr("check-status"), default: null },
+			isDraft: {
+				...dataAttr("is-draft"),
+				default: false,
+				parseHTML: (element: HTMLElement) => element.getAttribute("data-is-draft") === "true",
+				renderHTML: (attrs: Record<string, unknown>) => {
+					if (!attrs.isDraft) return {};
+					return { "data-is-draft": "true" };
+				},
+			},
 		};
 	},
 
@@ -149,72 +161,8 @@ export const PrMention = Node.create({
 		return [{ tag: 'span[data-type="prMention"]' }];
 	},
 
-	renderHTML({ node, HTMLAttributes }) {
-		const attrs = node.attrs as unknown as PrMentionAttrs;
-		const iconColor =
-			attrs.checkStatus === "failure"
-				? "var(--danger)"
-				: attrs.checkStatus === "pending"
-					? "var(--warning)"
-					: "var(--success)";
-		return [
-			"span",
-			mergeAttributes({ "data-type": this.name, class: "pr-mention" }, HTMLAttributes),
-			[
-				"span",
-				{ class: "pr-mention-icon", style: `color:${iconColor}` },
-				[
-					"svg",
-					{
-						viewBox: "0 0 24 24",
-						fill: "none",
-						xmlns: "http://www.w3.org/2000/svg",
-					},
-					[
-						"path",
-						{
-							d: "M15.5 6.5C17.5 6.5 18.5 7.5 18.5 9.5V17C18.5 19 17.5 20 15.5 20C13.5 20 12.5 19 12.5 17V9.5C12.5 7.5 13.5 6.5 15.5 6.5Z",
-							stroke: "currentColor",
-							"stroke-width": "1.5",
-							"stroke-linejoin": "round",
-						},
-					],
-					[
-						"circle",
-						{ cx: "15.5", cy: "5", r: "2", stroke: "currentColor", "stroke-width": "1.5" },
-					],
-					[
-						"circle",
-						{ cx: "15.5", cy: "19", r: "2", stroke: "currentColor", "stroke-width": "1.5" },
-					],
-					[
-						"path",
-						{
-							d: "M9 5.5H11.5C13 5.5 14 6.5 14 8V16C14 17.5 15 18.5 16.5 18.5H18.5",
-							stroke: "currentColor",
-							"stroke-width": "1.5",
-							"stroke-linecap": "round",
-							"stroke-linejoin": "round",
-						},
-					],
-					[
-						"circle",
-						{ cx: "6.5", cy: "5.5", r: "2", stroke: "currentColor", "stroke-width": "1.5" },
-					],
-					[
-						"circle",
-						{ cx: "6.5", cy: "18.5", r: "2", stroke: "currentColor", "stroke-width": "1.5" },
-					],
-				],
-			],
-			["span", { class: "pr-mention-title" }, attrs.title],
-			[
-				"span",
-				{ class: "pr-mention-ref" },
-				["span", { class: "pr-mention-repo" }, attrs.repo],
-				["span", { class: "pr-mention-number" }, `#${attrs.number}`],
-			],
-		];
+	addNodeView() {
+		return ReactNodeViewRenderer(PrMentionNodeView);
 	},
 
 	addStorage() {
@@ -250,6 +198,7 @@ export const PrMention = Node.create({
 							span.setAttribute("data-title", a.textContent ?? "");
 							span.setAttribute("data-url", a.getAttribute("href") ?? "");
 							span.setAttribute("data-check-status", "success");
+							span.setAttribute("data-is-draft", "false");
 							span.textContent = a.textContent;
 							a.replaceWith(span);
 						}

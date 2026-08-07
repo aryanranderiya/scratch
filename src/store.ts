@@ -43,6 +43,7 @@ interface AppState {
 	activeId: string | null;
 	active: Note | null;
 	prGroups: PrGroup[];
+	prsLoading: boolean;
 	sync: SyncStatus | null;
 	theme: Theme;
 	view: View;
@@ -89,6 +90,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 	activeId: null,
 	active: null,
 	prGroups: [],
+	prsLoading: false,
 	sync: null,
 	theme: "system",
 	view: "notes",
@@ -208,8 +210,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 	},
 
 	loadPrs: async () => {
-		const prGroups = await api.searchPrs();
-		set({ prGroups });
+		set({ prsLoading: true });
+		try {
+			const prGroups = await api.searchPrs();
+			set({ prGroups, prsLoading: false });
+		} catch (e) {
+			set({ prsLoading: false });
+			throw e;
+		}
 	},
 
 	loadBoard: async () => {

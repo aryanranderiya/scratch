@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { Spinner } from "../components/ui/Spinner";
 import type { PrGroup, PrItem } from "../lib/types";
 import { useAppStore } from "../store";
 import { PrRichCard } from "./PrRichCard";
@@ -86,16 +85,24 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 
 		if (loading) {
 			return (
-				<div className="flex items-center gap-2 rounded-xl bg-[var(--surface-raised)] px-4 py-3 shadow-2">
-					<Spinner className="h-4 w-4 text-[var(--ink-tertiary)]" />
-					<span className="text-[13px] text-secondary">Loading pull requests…</span>
+				<div className="surface-raised w-[min(400px,calc(100vw-2rem))] space-y-1.5 rounded-xl p-1.5">
+					<div className="h-3 w-16 animate-pulse rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]" />
+					{Array.from({ length: 3 }).map((_, i) => (
+						<div key={i} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2">
+							<div className="h-4 w-4 animate-pulse rounded-full bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]" />
+							<div className="flex-1 space-y-1.5">
+								<div className="h-3 w-3/4 animate-pulse rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]" />
+								<div className="h-2.5 w-1/3 animate-pulse rounded-md bg-[color-mix(in_oklab,var(--ink)_6%,transparent)]" />
+							</div>
+						</div>
+					))}
 				</div>
 			);
 		}
 
 		if (visibleItems.length === 0) {
 			return (
-				<div className="rounded-xl bg-[var(--surface-raised)] px-4 py-3 shadow-2">
+				<div className="surface-raised rounded-xl px-4 py-3">
 					<span className="text-[13px] text-secondary">
 						{query ? `No pull requests match "${query}"` : "No pull requests found"}
 					</span>
@@ -107,7 +114,7 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 			<div
 				ref={listRef}
 				data-scratch-popup="pr"
-				className="max-h-72 w-[min(400px,calc(100vw-2rem))] overflow-y-auto rounded-xl bg-[var(--surface-raised)] p-1.5 shadow-2"
+				className="max-h-72 w-[min(400px,calc(100vw-2rem))] overflow-y-auto surface-raised rounded-xl p-1.5"
 			>
 				{grouped.map(({ org, prs }) => (
 					<div key={org}>

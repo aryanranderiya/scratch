@@ -36,10 +36,12 @@ export function PrRepoRef({
 	pr,
 	className,
 	numberClassName,
-}: { pr: PrItem; className?: string; numberClassName?: string }) {
+	showOrg = true,
+}: { pr: PrItem; className?: string; numberClassName?: string; showOrg?: boolean }) {
+	const repoName = showOrg ? pr.repo : pr.repo.split("/").pop() ?? pr.repo;
 	return (
 		<span className={cn("inline-flex items-baseline gap-1", className)}>
-			<span className="truncate">{pr.repo}</span>
+			<span className="truncate">{repoName}</span>
 			<span className={cn("shrink-0 font-semibold text-[var(--accent)]", numberClassName)}>
 				#{pr.number}
 			</span>
@@ -69,7 +71,19 @@ export function PrRichCard({
 }) {
 	if (variant === "chip") {
 		return (
-			<span className="inline-flex max-w-full items-center gap-1 align-middle">
+			<span
+				className="pr-mention inline-flex max-w-full cursor-pointer items-center gap-1 align-middle"
+				role="button"
+				tabIndex={0}
+				title={`Open ${pr.repo}#${pr.number}`}
+				onClick={() => onSelect?.()}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						onSelect?.();
+					}
+				}}
+			>
 				<PrIcon status={pr.checkStatus} className="h-3.5 w-3.5" />
 				<span className="max-w-[16em] truncate text-[12.5px] font-medium text-[var(--ink)]">
 					{pr.title}
@@ -89,7 +103,9 @@ export function PrRichCard({
 			}}
 			className={cn(
 				"flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors",
-				selected && "bg-[var(--surface-muted)]",
+				selected
+					? "bg-[color-mix(in_oklab,var(--accent)_14%,transparent)]"
+					: "hover:bg-[color-mix(in_oklab,var(--ink)_9%,transparent)]",
 			)}
 		>
 			<PrIcon status={pr.checkStatus} className="h-4 w-4" />

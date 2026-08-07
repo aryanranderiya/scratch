@@ -54,6 +54,32 @@ const PALETTE = [
 	"#64d2ff",
 ];
 
+function SkeletonBlock({ className }: { className?: string }) {
+	return (
+		<div
+			className={cn("animate-pulse rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]", className)}
+		/>
+	);
+}
+
+function BoardSkeleton({ columns }: { columns: BoardColumn[] }) {
+	return (
+		<div className="flex flex-1 gap-3 overflow-hidden px-4 py-3">
+			{columns.map((col) => (
+				<div key={col.id} className="flex w-[240px] shrink-0 flex-col gap-2">
+					<div className="flex h-8 items-center gap-1.5 px-1">
+						<span className="h-2 w-2 rounded-full" style={{ background: col.color }} />
+						<SkeletonBlock className="h-3 w-24" />
+					</div>
+					<SkeletonBlock className="h-16 w-full" />
+					<SkeletonBlock className="h-16 w-full" />
+					<SkeletonBlock className="h-16 w-3/4" />
+				</div>
+			))}
+		</div>
+	);
+}
+
 const MENU_WIDTH = 176;
 
 function cardsFromOrdered(ordered: Record<string, string[]>): Record<string, string> {
@@ -150,7 +176,7 @@ function CardBody({ pr }: { pr: PrItem }) {
 					/>
 				</span>
 				<span className="min-w-0 flex-1 truncate text-[11px] text-tertiary">
-					<PrRepoRef pr={pr} />
+					<PrRepoRef pr={pr} showOrg={false} />
 				</span>
 				{pr.isDraft && (
 					<span className="shrink-0 rounded bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
@@ -443,6 +469,7 @@ export function Board() {
 	const prGroups = useAppStore((s) => s.prGroups);
 	const saveBoard = useAppStore((s) => s.saveBoard);
 	const hiddenRepos = useAppStore((s) => s.boardHiddenRepos);
+	const prsLoading = useAppStore((s) => s.prsLoading);
 
 	const prs = useMemo(() => prGroups.flatMap((g) => g.prs), [prGroups]);
 	const hiddenReposSet = useMemo(() => new Set(hiddenRepos), [hiddenRepos]);
@@ -617,7 +644,9 @@ export function Board() {
 
 	return (
 		<div className="flex h-full flex-col">
-			{visiblePrs.length === 0 && allRepos.length > 0 ? (
+			{prsLoading && prs.length === 0 ? (
+				<BoardSkeleton columns={board.columns} />
+			) : visiblePrs.length === 0 && allRepos.length > 0 ? (
 				<div className="flex flex-1 flex-col items-center justify-center gap-2 text-tertiary">
 					<InboxIcon className="h-6 w-6" />
 					<span className="text-[13px]">No pull requests match the current filter</span>

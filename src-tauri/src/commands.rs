@@ -5,12 +5,12 @@ use crate::github::GithubClient;
 use crate::models::*;
 use crate::notes::NotesStore;
 use crate::sync::SyncManager;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::State;
 
 pub struct AppState {
     pub config: ConfigStore,
-    pub github: GithubClient,
+    pub github: Arc<GithubClient>,
     pub notes: Mutex<NotesStore>,
     pub board: Mutex<BoardStore>,
     pub sync: SyncManager,

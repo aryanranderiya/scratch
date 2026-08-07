@@ -16,7 +16,7 @@ use notes::NotesStore;
 use sync::SyncManager;
 use tauri::Manager;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub fn init_state<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     let config_dir = std::env::var("SCRATCH_CONFIG_DIR")
@@ -34,7 +34,7 @@ pub fn init_state<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 
     app.manage(AppState {
         config: config_store,
-        github: GithubClient::new(),
+        github: Arc::new(GithubClient::new().with_config_dir(config_dir)),
         notes: Mutex::new(notes_store),
         board: Mutex::new(board_store),
         sync: sync_manager,

@@ -2,15 +2,19 @@ use crate::error::{AppError, AppResult};
 use crate::models::{GithubUser, PrGroup, PrItem, RepoChoice};
 use chrono::Utc;
 use futures::stream::{self, StreamExt};
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 pub struct GithubClient {
     client: reqwest::Client,
     cache: Mutex<PrCache>,
+    cache_path: Option<PathBuf>,
+    refreshing: AtomicBool,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 struct PrCache {
     groups: Vec<PrGroup>,
     fetched_at: i64,
@@ -18,6 +22,7 @@ struct PrCache {
 }
 
 const PR_CACHE_TTL_SECONDS: i64 = 120;
+const PR_CACHE_STALE_LIMIT_SECONDS: i64 = 24 * 60 * 60;
 
 impl GithubClient {
     pub fn new() -> Self {
@@ -32,7 +37,18 @@ impl GithubClient {
                 fetched_at: 0,
                 login: None,
             }),
+            cache_path: None,
+            refreshing: AtomicBool::new(false),
         }
+    }
+
+    /// Persist search results to a JSON file alongside the config, so a cold
+    /// start can serve from disk while the network refresh runs in the
+    /// background. Clients built with the default `new()` (one-off commands)
+    /// keep the in-memory-only behavior.
+    pub fn with_config_dir(mut self, config_dir: PathBuf) -> Self {
+        self.cache_path = Some(config_dir.join("pr_cache.json"));
+        self
     }
 
     async fn get<T: for<'de> Deserialize<'de>>(
@@ -154,58 +170,173 @@ impl GithubClient {
         Ok(repo.full_name)
     }
 
-    pub async fn search_prs(&self, token: &str, login: &str) -> AppResult<Vec<PrGroup>> {
-        {
-            let cache = self.cache.lock().unwrap();
-            let now = Utc::now().timestamp();
-            if cache.fetched_at > 0 && now - cache.fetched_at < PR_CACHE_TTL_SECONDS && cache.login.as_deref() == Some(login) {
-                return Ok(cache.groups.clone());
+    pub async fn search_prs(
+        self: &Arc<Self>,
+        token: &str,
+        login: &str,
+    ) -> AppResult<Vec<PrGroup>> {
+        if let Some(groups) = self.memory_cache_if_fresh(login) {
+            return Ok(groups);
+        }
+
+        if let Some(disk) = self.load_disk_cache() {
+            if disk.login.as_deref() == Some(login) {
+                let age = Utc::now().timestamp() - disk.fetched_at;
+                if age < PR_CACHE_TTL_SECONDS {
+                    let groups = disk.groups;
+                    self.fill_memory(groups.clone(), disk.fetched_at, login);
+                    return Ok(groups);
+                }
+                if age < PR_CACHE_STALE_LIMIT_SECONDS {
+                    let groups = disk.groups;
+                    self.fill_memory(groups.clone(), disk.fetched_at, login);
+                    self.spawn_refresh_if_idle(token, login);
+                    return Ok(groups);
+                }
             }
         }
 
+        let groups = self.fetch_prs(token, login).await?;
+        self.store_cache(&groups, login);
+        Ok(groups)
+    }
+
+    /// Full network fetch: org list, per-org search queries in parallel, then
+    /// per-PR check-runs enrichment with bounded concurrency.
+    async fn fetch_prs(&self, token: &str, login: &str) -> AppResult<Vec<PrGroup>> {
         let mut orgs = vec![login.to_string()];
         let org_list = self.list_orgs(token).await?;
         orgs.extend(org_list);
 
-        let mut all: HashMap<String, Vec<PrItem>> = HashMap::new();
-        for org in &orgs {
-            let query: String;
-            let url = if org == login {
-                query = format!(
-                    "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+user:{login}&per_page=100&sort=updated"
-                );
-                query
-            } else {
-                query = format!(
-                    "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+org:{org}&per_page=100&sort=updated"
-                );
-                query
-            };
-            let group = self.fetch_pr_page(token, &url).await?;
-            let entry = all.entry(org.clone()).or_default();
-            entry.extend(group);
-        }
+        let token_owned = token.to_string();
+        let login_owned = login.to_string();
+        let results: Vec<AppResult<(String, Vec<PrItem>)>> = stream::iter(orgs)
+            .map(|org| {
+                let token = token_owned.clone();
+                let login = login_owned.clone();
+                async move {
+                    let url = if org == login {
+                        format!(
+                            "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+user:{login}&per_page=100&sort=updated"
+                        )
+                    } else {
+                        format!(
+                            "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+org:{org}&per_page=100&sort=updated"
+                        )
+                    };
+                    let items = self.fetch_pr_page(&token, &url).await?;
+                    Ok((org, items))
+                }
+            })
+            .buffer_unordered(8)
+            .collect()
+            .await;
 
-        // Enrich every PR with its head check-run status, with bounded concurrency.
-        let prs: Vec<PrItem> = all.values().flatten().cloned().collect();
+        let results: Vec<(String, Vec<PrItem>)> =
+            results.into_iter().collect::<AppResult<_>>()?;
+
+        let prs: Vec<PrItem> = results
+            .iter()
+            .flat_map(|(_, items)| items.iter().cloned())
+            .collect();
         let enriched = self.enrich_check_status(token, prs).await?;
 
-        let mut groups: Vec<PrGroup> = Vec::new();
-        for (org, _) in all {
-            let prs: Vec<PrItem> = enriched
-                .iter()
-                .filter(|p| p.org == org)
-                .cloned()
-                .collect();
-            groups.push(PrGroup { org, prs });
-        }
+        let mut groups: Vec<PrGroup> = results
+            .into_iter()
+            .map(|(org, _)| PrGroup {
+                org: org.clone(),
+                prs: enriched.iter().filter(|p| p.org == org).cloned().collect(),
+            })
+            .collect();
         groups.sort_by(|a, b| a.org.cmp(&b.org));
-
-        let mut cache = self.cache.lock().unwrap();
-        cache.groups = groups.clone();
-        cache.fetched_at = Utc::now().timestamp();
-        cache.login = Some(login.to_string());
         Ok(groups)
+    }
+
+    fn memory_cache_if_fresh(&self, login: &str) -> Option<Vec<PrGroup>> {
+        let cache = self.cache.lock().unwrap();
+        let now = Utc::now().timestamp();
+        if cache.fetched_at > 0
+            && now - cache.fetched_at < PR_CACHE_TTL_SECONDS
+            && cache.login.as_deref() == Some(login)
+        {
+            Some(cache.groups.clone())
+        } else {
+            None
+        }
+    }
+
+    fn fill_memory(&self, groups: Vec<PrGroup>, fetched_at: i64, login: &str) {
+        let mut cache = self.cache.lock().unwrap();
+        cache.groups = groups;
+        cache.fetched_at = fetched_at;
+        cache.login = Some(login.to_string());
+    }
+
+    fn store_cache(&self, groups: &[PrGroup], login: &str) {
+        let now = Utc::now().timestamp();
+        let cache = PrCache {
+            groups: groups.to_vec(),
+            fetched_at: now,
+            login: Some(login.to_string()),
+        };
+        *self.cache.lock().unwrap() = cache.clone();
+        self.save_disk_cache(&cache);
+    }
+
+    fn load_disk_cache(&self) -> Option<PrCache> {
+        let path = self.cache_path.as_ref()?;
+        let content = std::fs::read_to_string(path).ok()?;
+        match serde_json::from_str(&content) {
+            Ok(cache) => Some(cache),
+            Err(e) => {
+                eprintln!("pr cache unreadable at {}: {e}", path.display());
+                None
+            }
+        }
+    }
+
+    fn save_disk_cache(&self, cache: &PrCache) {
+        let Some(path) = self.cache_path.as_ref() else {
+            return;
+        };
+        let content = match serde_json::to_string(cache) {
+            Ok(content) => content,
+            Err(e) => {
+                eprintln!("pr cache serialization failed: {e}");
+                return;
+            }
+        };
+        if let Some(parent) = path.parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                eprintln!("pr cache dir creation failed: {e}");
+                return;
+            }
+        }
+        if let Err(e) = std::fs::write(path, content) {
+            eprintln!("pr cache write failed at {}: {e}", path.display());
+        }
+    }
+
+    /// Serve stale data immediately and refetch in the background, unless a
+    /// refresh is already in flight.
+    fn spawn_refresh_if_idle(self: &Arc<Self>, token: &str, login: &str) {
+        if self
+            .refreshing
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return;
+        }
+        let this = Arc::clone(self);
+        let token = token.to_string();
+        let login = login.to_string();
+        tauri::async_runtime::spawn(async move {
+            match this.fetch_prs(&token, &login).await {
+                Ok(groups) => this.store_cache(&groups, &login),
+                Err(e) => eprintln!("background pr refresh failed: {e}"),
+            }
+            this.refreshing.store(false, Ordering::SeqCst);
+        });
     }
 
     async fn enrich_check_status(&self, token: &str, prs: Vec<PrItem>) -> AppResult<Vec<PrItem>> {

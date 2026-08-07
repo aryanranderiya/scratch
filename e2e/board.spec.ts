@@ -49,7 +49,7 @@ test("drags a PR card between columns and persists the board", async ({ page }) 
 	await page.goto("/");
 	await page.getByTitle("Board").click();
 
-	const card = page.locator(".cursor-grab", { hasText: "theexperiencecompany/gaia#897" });
+	const card = page.locator(".cursor-grab", { hasText: "gaia#897" });
 	await expect(card).toBeVisible();
 
 	const targetColumn = page.getByText("In Progress", { exact: true }).locator("xpath=../..");

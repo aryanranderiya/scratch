@@ -22,4 +22,24 @@ export default defineConfig({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("@tiptap")) return "tiptap";
+          if (id.includes("prosemirror")) return "prosemirror";
+          if (id.includes("markdown-it") || id.includes("tiptap-markdown")) return "markdown";
+          if (id.includes("@dnd-kit")) return "dnd-kit";
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "react";
+          }
+        },
+      },
+    },
+  },
 });

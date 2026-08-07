@@ -10,7 +10,6 @@ import { ArrowUp01Icon, PlusSignIcon } from "hugeicons-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import appIcon from "../assets/icon.png";
-import { openUrl } from "../lib/open";
 import { cn } from "../lib/utils";
 import { useAppStore } from "../store";
 import { PrMention } from "./PrMention";
@@ -55,6 +54,7 @@ export function Editor() {
 		],
 		content: "",
 		autofocus: false,
+		immediatelyRender: false,
 		editorProps: {
 			attributes: {
 				class: "tiptap min-h-[60vh] focus:outline-none",
@@ -94,18 +94,6 @@ export function Editor() {
 		}
 		prevSettingsOpen.current = settingsOpen;
 	}, [settingsOpen, editor, active]);
-
-	useEffect(() => {
-		if (!editor) return;
-		const onClick = (event: MouseEvent) => {
-			const target = (event.target as HTMLElement).closest(".pr-mention");
-			if (!target) return;
-			const url = target.getAttribute("data-url");
-			if (url) void openUrl(url);
-		};
-		editor.view.dom.addEventListener("click", onClick);
-		return () => editor.view.dom.removeEventListener("click", onClick);
-	}, [editor]);
 
 	useEffect(() => {
 		return () => {
