@@ -97,12 +97,17 @@ test("@ opens PR autocomplete grouped by org and inserts a mention", async ({ pa
 	await popup.locator("button").first().click();
 
 	await page.waitForTimeout(300);
-	const mention = page.locator(".tiptap .pr-mention").first();
+	const mention = page.locator(".tiptap .pr-mention-card").first();
 	await expect(mention).toBeVisible();
-	const text = await mention.textContent();
-	expect(text).toContain("#");
-	// Rich chip: PR icon + title + repo#number
+	// Full-width card: icon tile + title row + repo #num row
 	await expect(mention.locator("svg").first()).toBeVisible();
+	const box = await mention.boundingBox();
+	expect(box).not.toBeNull();
+	if (box) {
+		// card spans nearly the full editor width (no unnecessary truncation)
+		expect(box.width).toBeGreaterThan(300);
+	}
+	const text = await mention.textContent();
 	expect(text).toContain("#");
 
 	await page.waitForFunction(() => {

@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { openUrl } from "../lib/open";
 import { PrRichCard } from "./PrRichCard";
 
-/** Renders a prMention node as the same rich chip used in the @ picker. */
+/** Renders a prMention node as a full-width card: title on line 1, repo #num on line 2. */
 export function PrMentionNodeView({ node }: NodeViewProps) {
 	const attrs = node.attrs as unknown as {
 		id: string;
@@ -13,6 +13,7 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 		title: string;
 		url: string;
 		checkStatus: string | null;
+		isDraft: boolean;
 	};
 
 	const onSelect = useCallback(() => {
@@ -20,9 +21,13 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 	}, [attrs.url]);
 
 	return (
-		<NodeViewWrapper as="span" className="pr-mention-view" contentEditable={false}>
+		<NodeViewWrapper
+			as="span"
+			className="pr-mention-view my-1 block w-full"
+			contentEditable={false}
+		>
 			<PrRichCard
-				variant="chip"
+				variant="card"
 				pr={{
 					id: attrs.id,
 					repo: attrs.repo,
@@ -30,7 +35,7 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 					number: attrs.number,
 					title: attrs.title,
 					url: attrs.url,
-					isDraft: false,
+					isDraft: attrs.isDraft,
 					checkStatus: attrs.checkStatus as never,
 				}}
 				onSelect={onSelect}

@@ -67,8 +67,50 @@ export function PrRichCard({
 	selected?: boolean;
 	onSelect?: () => void;
 	onMouseEnter?: () => void;
-	variant?: "row" | "chip";
+	variant?: "row" | "chip" | "card";
 }) {
+	if (variant === "card") {
+		return (
+			<span
+				className="pr-mention-card flex w-full cursor-pointer items-center gap-3 rounded-xl border border-[var(--separator)] bg-[var(--surface-raised)] p-3 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
+				role="button"
+				tabIndex={0}
+				title={`Open ${pr.repo}#${pr.number}`}
+				onClick={() => onSelect?.()}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						onSelect?.();
+					}
+				}}
+			>
+				<span
+					className={cn(
+						"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+						pr.isDraft
+							? "bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
+							: "bg-[color-mix(in_oklab,var(--success)_12%,transparent)]",
+					)}
+				>
+					<PrIcon status={pr.checkStatus} className="h-4 w-4" />
+				</span>
+				<span className="flex min-w-0 flex-1 flex-col gap-0.5">
+					<span className="line-clamp-2 text-[13px] font-medium leading-snug text-[var(--ink)]">
+						{pr.title}
+					</span>
+					<span className="flex items-center gap-1.5">
+						<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
+						{pr.isDraft && (
+							<span className="rounded bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
+								Draft
+							</span>
+						)}
+					</span>
+				</span>
+			</span>
+		);
+	}
+
 	if (variant === "chip") {
 		return (
 			<span

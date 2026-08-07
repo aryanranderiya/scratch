@@ -67,24 +67,31 @@ export const PrMention = Node.create({
 					range: { from: number; to: number };
 					props: PrItem;
 				}) => {
+					// Insert the mention as a standalone paragraph so the card
+					// renders full-width on its own line (Notion-style).
 					editor
 						.chain()
 						.focus()
 						.insertContentAt(range, [
 							{
-								type: this.name,
-								attrs: {
-									id: props.id,
-									repo: props.repo,
-									org: props.org,
-									number: props.number,
-									title: props.title,
-									url: props.url,
-									checkStatus: props.checkStatus,
-									isDraft: props.isDraft,
-								},
+								type: "paragraph",
+								content: [
+									{
+										type: this.name,
+										attrs: {
+											id: props.id,
+											repo: props.repo,
+											org: props.org,
+											number: props.number,
+											title: props.title,
+											url: props.url,
+											checkStatus: props.checkStatus,
+											isDraft: props.isDraft,
+										},
+									},
+								],
 							},
-							{ type: "text", text: " " },
+							{ type: "paragraph" },
 						])
 						.run();
 				},

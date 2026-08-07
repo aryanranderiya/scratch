@@ -276,41 +276,15 @@
 	background: color-mix(in oklab, var(--ink) 12%, transparent);
 }
 
-.pr-mention .pr-mention-icon {
+/* PR mention card (full-width block in the editor) */
+.pr-mention-card {
+	text-decoration: none !important;
+}
+
+.pr-mention-card .pr-mention-icon {
 	display: inline-flex;
 	align-items: center;
 	flex: none;
-}
-
-.pr-mention .pr-mention-icon svg {
-	width: 0.95em;
-	height: 0.95em;
-}
-
-.pr-mention .pr-mention-title {
-	font-weight: 500;
-	max-width: 18em;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.pr-mention .pr-mention-ref {
-	display: inline-flex;
-	align-items: baseline;
-	gap: 0.2em;
-	font-size: 0.92em;
-	white-space: nowrap;
-}
-
-.pr-mention .pr-mention-repo {
-	opacity: 0.7;
-	font-weight: 400;
-}
-
-.pr-mention .pr-mention-number {
-	color: var(--accent);
-	font-weight: 600;
 }
 
 /* Task list checkboxes */
