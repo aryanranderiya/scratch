@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import type { PrGroup, PrItem } from "../lib/types";
+import type { PrItem } from "../lib/types";
 import { useAppStore } from "../store";
 import { PrRichCard } from "./PrRichCard";
 
@@ -14,6 +14,20 @@ interface PrMentionPopupProps {
 	loading?: boolean;
 }
 
+interface PrSection {
+	label: string;
+	prs: PrItem[];
+}
+
+function sectionLabel(item: PrItem): string | null {
+	if (item.isDraft) return "Drafts";
+	if (item.checkStatus === "success") return "Open · Passing";
+	if (item.checkStatus === "failure") return "Open · Failing";
+	return "Open · Idle";
+}
+
+const SECTION_ORDER = ["Open · Passing", "Open · Failing", "Open · Idle", "Drafts"];
+
 export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 	function PrMentionPopup({ items, command, query, loading }, ref) {
 		const [selectedIndex, setSelectedIndex] = useState(0);
@@ -21,33 +35,34 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 		const config = useAppStore((s) => s.config);
 
 		const hiddenOrgs = config?.hiddenOrgs ?? [];
-		const favoriteOrgs = config?.favoriteOrgs ?? [];
 
 		const visibleItems = useMemo(() => {
 			const hidden = new Set(hiddenOrgs);
-			return items.filter((item) => !hidden.has(item.org));
+			const filtered = items.filter((item) => !hidden.has(item.org));
+			// Most-ready first: passing CI, then failing, then idle, drafts last.
+			return [...filtered].sort((a, b) => {
+				const aIdx = SECTION_ORDER.indexOf(sectionLabel(a) ?? "");
+				const bIdx = SECTION_ORDER.indexOf(sectionLabel(b) ?? "");
+				if (aIdx !== bIdx) return aIdx - bIdx;
+				return a.repo.localeCompare(b.repo) || a.number - b.number;
+			});
 		}, [items, hiddenOrgs]);
 
-		const grouped = useMemo(() => {
+		const sections = useMemo(() => {
 			const map = new Map<string, PrItem[]>();
 			for (const item of visibleItems) {
-				const list = map.get(item.org) ?? [];
+				const label = sectionLabel(item) ?? "Open · Idle";
+				const list = map.get(label) ?? [];
 				list.push(item);
-				map.set(item.org, list);
+				map.set(label, list);
 			}
-			const favoriteGroups: PrGroup[] = [];
-			for (const org of favoriteOrgs) {
-				const prs = map.get(org);
-				if (prs) {
-					favoriteGroups.push({ org, prs });
-				}
+			const out: PrSection[] = [];
+			for (const label of SECTION_ORDER) {
+				const prs = map.get(label);
+				if (prs && prs.length > 0) out.push({ label, prs });
 			}
-			const otherGroups = Array.from(map.entries())
-				.filter(([org]) => !favoriteOrgs.includes(org))
-				.sort(([a], [b]) => a.localeCompare(b))
-				.map(([org, prs]) => ({ org, prs }));
-			return [...favoriteGroups, ...otherGroups];
-		}, [visibleItems, favoriteOrgs]);
+			return out;
+		}, [visibleItems]);
 
 		useEffect(() => {
 			setSelectedIndex((i) => Math.min(i, Math.max(visibleItems.length - 1, 0)));
@@ -116,9 +131,13 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 				data-scratch-popup="pr"
 				className="max-h-72 w-[min(400px,calc(100vw-2rem))] overflow-y-auto surface-raised rounded-xl p-1.5"
 			>
-				{grouped.map(({ org, prs }) => (
-					<div key={org}>
-						<div className="px-2.5 pb-1 pt-2 text-[11px] font-medium text-tertiary">{org}</div>
+				{sections.map(({ label, prs }) => (
+					<div key={label}>
+						{label !== "Open · Passing" && (
+							<div className="px-2.5 pb-1 pt-2 text-[11px] font-medium text-tertiary">
+								{label}
+							</div>
+						)}
 						{prs.map((item) => {
 							const idx = visibleItems.indexOf(item);
 							const selected = idx === selectedIndex;

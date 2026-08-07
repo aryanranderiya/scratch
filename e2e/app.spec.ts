@@ -74,7 +74,7 @@ test("inserts the PR checklist with predefined items", async ({ page }) => {
 	expect(items).toContain("Manually Tested");
 });
 
-test("@ opens PR autocomplete grouped by org and inserts a mention", async ({ page }) => {
+test("@ opens PR autocomplete grouped by state and inserts a card", async ({ page }) => {
 	await page.goto("/");
 	await newNoteButton(page).click();
 	await page.waitForTimeout(300);
@@ -87,10 +87,13 @@ test("@ opens PR autocomplete grouped by org and inserts a mention", async ({ pa
 	const popup = page.locator("[data-scratch-popup='pr']");
 	await expect(popup).toBeVisible();
 
-	await expect(popup.getByText("theexperiencecompany", { exact: true })).toBeVisible();
-	await expect(popup.getByText("testuser", { exact: true })).toBeVisible();
-	// PR icon colored by CI status (inline style color)
+	// State sections: passing at top (no header), failing + drafts labeled
+	await expect(popup.getByText("chore: release master", { exact: true })).toBeVisible();
+	await expect(popup.getByText("Open · Failing", { exact: true })).toBeVisible();
+	await expect(popup.getByText("Drafts", { exact: true })).toBeVisible();
+	// PR icon: green for open, grey for draft
 	await expect(popup.locator('[style*="var(--success)"]').first()).toBeVisible();
+	// CI icons: green check, red cross
 	await expect(popup.locator('[style*="var(--danger)"]').first()).toBeVisible();
 	await expect(popup.getByText("Draft", { exact: true })).toBeVisible();
 
@@ -163,8 +166,8 @@ test("hides PRs from orgs listed in hiddenOrgs config", async ({ page }) => {
 
 	const popup = page.locator("[data-scratch-popup='pr']");
 	await expect(popup).toBeVisible();
-	await expect(popup.getByText("testuser", { exact: true })).toHaveCount(0);
+	// Hidden org's PRs excluded entirely
 	await expect(popup.getByText(/pet-project/)).toHaveCount(0);
-	await expect(popup.getByText("theexperiencecompany", { exact: true })).toBeVisible();
+	await expect(popup.getByText(/gaia#897/)).toBeVisible();
 	await expect(popup.getByText("chore: release master")).toBeVisible();
 });

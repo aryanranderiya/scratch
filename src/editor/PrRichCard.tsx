@@ -1,32 +1,61 @@
-import { GitPullRequestIcon } from "hugeicons-react";
+import { CancelCircleIcon, CheckmarkCircle02Icon, GitPullRequestIcon } from "hugeicons-react";
 import type { PrItem } from "../lib/types";
 import { cn } from "../lib/utils";
 
-/** GitHub-style PR icon color: green for open/success, red for failure, amber for pending. */
-export function prIconColor(status: PrItem["checkStatus"]): string {
-	switch (status) {
-		case "success":
-			return "var(--success)";
-		case "failure":
-			return "var(--danger)";
-		case "pending":
-			return "var(--warning)";
-		default:
-			return "var(--ink-tertiary)";
-	}
+/**
+ * GitHub-style PR icon color: the git-pull-request icon is green for an open
+ * PR and grey for a draft PR — matching GitHub's own UI.
+ */
+export function prIconColor(isDraft: boolean): string {
+	return isDraft ? "var(--ink-tertiary)" : "var(--success)";
 }
 
 export function PrIcon({
-	status,
+	isDraft,
 	className,
 	color,
-}: { status: PrItem["checkStatus"]; className?: string; color?: string }) {
+}: { isDraft: boolean; className?: string; color?: string }) {
 	return (
 		<GitPullRequestIcon
 			className={cn("shrink-0", className)}
-			style={{ color: color ?? prIconColor(status) }}
+			style={{ color: color ?? prIconColor(isDraft) }}
 		/>
 	);
+}
+
+/**
+ * CI status icon, distinct from the PR icon: green check for success, red
+ * cross for failure, orange dot for pending, nothing when unknown.
+ */
+export function CiStatusIcon({
+	status,
+	className,
+}: { status: PrItem["checkStatus"]; className?: string }) {
+	if (status === "success") {
+		return (
+			<CheckmarkCircle02Icon
+				className={cn("shrink-0", className)}
+				style={{ color: "var(--success)" }}
+			/>
+		);
+	}
+	if (status === "failure") {
+		return (
+			<CancelCircleIcon
+				className={cn("shrink-0", className)}
+				style={{ color: "var(--danger)" }}
+			/>
+		);
+	}
+	if (status === "pending") {
+		return (
+			<span
+				className={cn("shrink-0 rounded-full", className)}
+				style={{ background: "var(--warning)" }}
+			/>
+		);
+	}
+	return null;
 }
 
 /**
@@ -51,11 +80,11 @@ export function PrRepoRef({
 }
 
 /**
- * Shared rich PR content used by both the @ autocomplete popup and the inline
- * prMention node, so the editor shows the same content you picked.
+ * Shared rich PR content used by both the @ autocomplete popup and the
+ * prMention block, so the editor shows the same content you picked.
  *
- * `variant="row"` is the full-width picker row (button). `variant="chip"` is
- * the compact inline mention rendered inside the editor (span).
+ * `variant="row"` is the full-width picker row (button). `variant="card"` is
+ * the full-width block mention rendered inside the editor.
  */
 export function PrRichCard({
 	pr,
@@ -68,16 +97,16 @@ export function PrRichCard({
 	selected?: boolean;
 	onSelect?: () => void;
 	onMouseEnter?: () => void;
-	variant?: "row" | "chip" | "card";
+	variant?: "row" | "card";
 }) {
 	if (variant === "card") {
-		const statusColor = pr.isDraft ? "var(--ink-secondary)" : prIconColor(pr.checkStatus);
+		const prColor = prIconColor(pr.isDraft);
 		return (
 			<span
 				className="pr-mention-card flex w-full cursor-pointer items-start justify-start gap-2.5 rounded-2xl bg-[var(--surface-muted)] p-2 transition-colors hover:bg-[var(--surface-hover)]"
 				role="button"
 				tabIndex={0}
-				title={`Open ${pr.repo}#${pr.number}`}
+				title={pr.title}
 				onClick={() => onSelect?.()}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -88,9 +117,9 @@ export function PrRichCard({
 			>
 				<span
 					className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-					style={{ background: `color-mix(in oklab, ${statusColor} 12%, transparent)` }}
+					style={{ background: `color-mix(in oklab, ${prColor} 12%, transparent)` }}
 				>
-					<PrIcon status={pr.checkStatus} className="h-3.5 w-3.5" color={statusColor} />
+					<PrIcon isDraft={pr.isDraft} className="h-3.5 w-3.5" />
 				</span>
 				<span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
 					<span className="line-clamp-2 text-[12.5px] font-medium leading-snug text-[var(--ink)]">
@@ -98,6 +127,7 @@ export function PrRichCard({
 					</span>
 					<span className="flex items-center gap-1.5">
 						<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
+						<CiStatusIcon status={pr.checkStatus} className="h-3 w-3" />
 						{pr.isDraft && (
 							<span className="rounded-md bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
 								Draft
@@ -109,33 +139,10 @@ export function PrRichCard({
 		);
 	}
 
-	if (variant === "chip") {
-		return (
-			<span
-				className="pr-mention inline-flex max-w-full cursor-pointer items-center gap-1 align-middle"
-				role="button"
-				tabIndex={0}
-				title={`Open ${pr.repo}#${pr.number}`}
-				onClick={() => onSelect?.()}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						onSelect?.();
-					}
-				}}
-			>
-				<PrIcon status={pr.checkStatus} className="h-3.5 w-3.5" />
-				<span className="max-w-[16em] truncate text-[12.5px] font-medium text-[var(--ink)]">
-					{pr.title}
-				</span>
-				<PrRepoRef pr={pr} className="shrink-0 text-[11px] text-tertiary" />
-			</span>
-		);
-	}
-
 	return (
 		<button
 			type="button"
+			title={pr.title}
 			onMouseEnter={onMouseEnter}
 			onMouseDown={(e) => {
 				e.preventDefault();
@@ -148,10 +155,13 @@ export function PrRichCard({
 					: "hover:bg-[color-mix(in_oklab,var(--ink)_9%,transparent)]",
 			)}
 		>
-			<PrIcon status={pr.checkStatus} className="h-4 w-4" />
+			<PrIcon isDraft={pr.isDraft} className="h-4 w-4" />
 			<div className="min-w-0 flex-1">
 				<div className="truncate text-[13px] text-[var(--ink)]">{pr.title}</div>
-				<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
+				<div className="flex items-center gap-1.5">
+					<PrRepoRef pr={pr} className="text-[11px] text-tertiary" />
+					<CiStatusIcon status={pr.checkStatus} className="h-3 w-3" />
+				</div>
 			</div>
 			{pr.isDraft && (
 				<span className="shrink-0 rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-tertiary">

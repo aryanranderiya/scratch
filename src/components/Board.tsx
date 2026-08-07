@@ -19,9 +19,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
 	Cancel01Icon,
-	CancelCircleIcon,
-	CheckmarkCircle02Icon,
-	Clock01Icon,
 	GitPullRequestIcon,
 	InboxIcon,
 	MoreHorizontalIcon,
@@ -36,7 +33,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { PrRepoRef } from "../editor/PrRichCard";
+import { PrRepoRef, CiStatusIcon } from "../editor/PrRichCard";
 import { openUrl } from "../lib/open";
 import type { BoardColumn, BoardState, PrItem } from "../lib/types";
 import { cn, uid } from "../lib/utils";
@@ -143,19 +140,6 @@ function reconcileOrdered(
 	return ordered;
 }
 
-function CiStatusIcon({ status }: { status: PrItem["checkStatus"] }) {
-	switch (status) {
-		case "success":
-			return <CheckmarkCircle02Icon className="h-3.5 w-3.5 shrink-0 text-[var(--success)]" />;
-		case "failure":
-			return <CancelCircleIcon className="h-3.5 w-3.5 shrink-0 text-[var(--danger)]" />;
-		case "pending":
-			return <Clock01Icon className="h-3.5 w-3.5 shrink-0 text-[var(--warning)]" />;
-		default:
-			return <GitPullRequestIcon className="h-3.5 w-3.5 shrink-0 text-[var(--ink-tertiary)]" />;
-	}
-}
-
 function CardBody({ pr }: { pr: PrItem }) {
 	return (
 		<div className="space-y-1.5">
@@ -183,7 +167,7 @@ function CardBody({ pr }: { pr: PrItem }) {
 						Draft
 					</span>
 				)}
-				<CiStatusIcon status={pr.checkStatus} />
+				<CiStatusIcon status={pr.checkStatus} className="h-3.5 w-3.5" />
 			</div>
 			<p className="line-clamp-2 text-[13px] font-medium leading-snug">{pr.title}</p>
 		</div>
@@ -199,6 +183,7 @@ function SortableCard({ pr }: { pr: PrItem }) {
 			ref={setNodeRef}
 			{...attributes}
 			{...listeners}
+			title={pr.title}
 			onClick={() => void openUrl(pr.url)}
 			style={{
 				transform: CSS.Transform.toString(transform),
