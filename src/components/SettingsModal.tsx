@@ -356,9 +356,7 @@ export function SettingsModal() {
 													onClick={() => void toggleOrgHidden(org)}
 													className="flex h-6 w-10 items-center rounded-full transition-colors duration-200"
 													style={{
-														background: hidden
-															? "var(--surface-hover)"
-															: "var(--accent)",
+														background: hidden ? "var(--surface-hover)" : "var(--accent)",
 														justifyContent: hidden ? "flex-start" : "flex-end",
 													}}
 												>

@@ -20,15 +20,13 @@ import { CSS } from "@dnd-kit/utilities";
 import {
 	Cancel01Icon,
 	CancelCircleIcon,
-	GitPullRequestIcon,
 	CheckmarkCircle02Icon,
 	Clock01Icon,
-	FilterIcon,
+	GitPullRequestIcon,
 	InboxIcon,
 	MoreHorizontalIcon,
 	PencilEdit01Icon,
 	PlusSignIcon,
-	Refresh01Icon,
 } from "hugeicons-react";
 import {
 	type MouseEvent as ReactMouseEvent,
@@ -443,28 +441,10 @@ export function Board() {
 	const board = useAppStore((s) => s.board);
 	const prGroups = useAppStore((s) => s.prGroups);
 	const saveBoard = useAppStore((s) => s.saveBoard);
+	const hiddenRepos = useAppStore((s) => s.boardHiddenRepos);
 
 	const prs = useMemo(() => prGroups.flatMap((g) => g.prs), [prGroups]);
-
-	const [filterOpen, setFilterOpen] = useState(false);
-	const [hiddenRepos, setHiddenRepos] = useState<Set<string>>(() => {
-		try {
-			const raw = localStorage.getItem("scratch.board.hiddenRepos");
-			return raw ? new Set(JSON.parse(raw) as string[]) : new Set<string>();
-		} catch {
-			return new Set<string>();
-		}
-	});
-
-	const toggleRepo = (repo: string) => {
-		setHiddenRepos((prev) => {
-			const next = new Set(prev);
-			if (next.has(repo)) next.delete(repo);
-			else next.add(repo);
-			localStorage.setItem("scratch.board.hiddenRepos", JSON.stringify([...next]));
-			return next;
-		});
-	};
+	const hiddenReposSet = useMemo(() => new Set(hiddenRepos), [hiddenRepos]);
 
 	const allRepos = useMemo(() => {
 		const seen = new Set<string>();
@@ -473,8 +453,8 @@ export function Board() {
 	}, [prs]);
 
 	const visiblePrs = useMemo(
-		() => prs.filter((p) => !hiddenRepos.has(p.repo)),
-		[prs, hiddenRepos],
+		() => prs.filter((p) => !hiddenReposSet.has(p.repo)),
+		[prs, hiddenReposSet],
 	);
 	const prMap = useMemo(() => new Map(visiblePrs.map((p) => [p.id, p])), [visiblePrs]);
 
@@ -636,78 +616,6 @@ export function Board() {
 
 	return (
 		<div className="flex h-full flex-col">
-			<div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--separator)] px-4">
-				<div className="relative">
-					<button
-						type="button"
-						title="Filter repos"
-						onClick={() => setFilterOpen((o) => !o)}
-						className={cn(
-							"flex h-6 items-center gap-1 rounded-md px-2 text-[12px] font-medium transition-colors",
-							filterOpen || hiddenRepos.size > 0
-								? "text-[var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)]"
-								: "text-[var(--ink-secondary)] hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] hover:text-[var(--ink)]",
-						)}
-					>
-						<FilterIcon className="h-3.5 w-3.5" />
-						Repos
-						{hiddenRepos.size > 0 && (
-							<span className="rounded-full bg-[var(--accent-soft)] px-1.5 text-[10px] font-semibold text-[var(--accent)]">
-								{hiddenRepos.size}
-							</span>
-						)}
-					</button>
-					{filterOpen && (
-						<>
-							<div
-								className="fixed inset-0 z-40"
-								onMouseDown={(e) => {
-									e.stopPropagation();
-									setFilterOpen(false);
-								}}
-							/>
-							<div
-								className="glass-strong absolute left-0 top-full z-50 mt-1 max-h-64 w-60 overflow-y-auto rounded-xl p-1.5 shadow-3"
-								style={{ animation: "menu-in 0.12s ease-out" }}
-							>
-								{allRepos.length === 0 && (
-									<div className="px-2.5 py-2 text-[12px] text-tertiary">No repos yet</div>
-								)}
-								{allRepos.map((repo) => {
-									const hidden = hiddenRepos.has(repo);
-									return (
-										<button
-											key={repo}
-											type="button"
-											onClick={() => toggleRepo(repo)}
-											className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
-										>
-											<span
-												className={cn(
-													"flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors",
-													hidden
-														? "border-[var(--separator)] bg-transparent"
-														: "border-[var(--accent)] bg-[var(--accent)]",
-												)}
-											>
-												{!hidden && <CheckmarkCircle02Icon className="h-3 w-3 text-white" />}
-											</span>
-											<span className={cn("min-w-0 truncate", hidden && "text-tertiary")}>
-												{repo}
-											</span>
-										</button>
-									);
-								})}
-							</div>
-						</>
-					)}
-				</div>
-				<span className="flex items-center gap-1 text-[11px] text-tertiary">
-					<Refresh01Icon className="h-3 w-3" />
-					Auto-syncs
-				</span>
-			</div>
-
 			{visiblePrs.length === 0 && allRepos.length > 0 ? (
 				<div className="flex flex-1 flex-col items-center justify-center gap-2 text-tertiary">
 					<InboxIcon className="h-6 w-6" />

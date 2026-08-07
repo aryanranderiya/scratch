@@ -17,6 +17,25 @@ export function applyPlatformClass() {
 	document.documentElement.classList.toggle("platform-mac", isMac);
 }
 
+const BOARD_HIDDEN_REPOS_KEY = "scratch.board.hiddenRepos";
+
+export function loadBoardHiddenRepos(): string[] {
+	try {
+		const raw = localStorage.getItem(BOARD_HIDDEN_REPOS_KEY);
+		return raw ? (JSON.parse(raw) as string[]) : [];
+	} catch {
+		return [];
+	}
+}
+
+export function persistBoardHiddenRepos(repos: string[]) {
+	try {
+		localStorage.setItem(BOARD_HIDDEN_REPOS_KEY, JSON.stringify(repos));
+	} catch {
+		// localStorage unavailable — filter state simply won't persist.
+	}
+}
+
 interface AppState {
 	ready: boolean;
 	config: AppConfig | null;
@@ -28,6 +47,7 @@ interface AppState {
 	theme: Theme;
 	view: View;
 	board: BoardState;
+	boardHiddenRepos: string[];
 	settingsOpen: boolean;
 	sidebarOpen: boolean;
 
@@ -37,6 +57,7 @@ interface AppState {
 	setSettingsOpen: (open: boolean) => void;
 	setSidebarOpen: (open: boolean) => void;
 	persistView: (v: View) => Promise<void>;
+	setBoardHiddenRepos: (repos: string[]) => void;
 	persistToolbarCollapsed: (collapsed: boolean) => Promise<void>;
 
 	refreshNotes: () => Promise<void>;
@@ -72,6 +93,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 	theme: "system",
 	view: "notes",
 	board: { columns: [], cards: {} },
+	boardHiddenRepos: [],
 	settingsOpen: false,
 	sidebarOpen: false,
 
@@ -80,7 +102,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 		// Render the shell immediately; hydrate in the background so slow
 		// loads (PR search + check-runs) never block first paint.
 		const config = await api.getConfig();
-		set({ config, ready: true });
+		const hiddenRepos = loadBoardHiddenRepos();
+		set({ config, ready: true, boardHiddenRepos: hiddenRepos });
 		get().applyTheme(config.theme as Theme);
 		set({ view: (config.viewMode as View) || "notes" });
 		void get()
@@ -113,6 +136,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 		if (!cfg) return;
 		await api.saveConfig({ ...cfg, toolbarCollapsed: collapsed });
 		set({ config: { ...cfg, toolbarCollapsed: collapsed } });
+	},
+
+	setBoardHiddenRepos: (repos) => {
+		persistBoardHiddenRepos(repos);
+		set({ boardHiddenRepos: repos });
 	},
 
 	refreshNotes: async () => {

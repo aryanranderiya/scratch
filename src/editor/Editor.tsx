@@ -9,6 +9,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { ArrowUp01Icon, PlusSignIcon } from "hugeicons-react";
 import { useEffect, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
+import appIcon from "../assets/icon.png";
 import { openUrl } from "../lib/open";
 import { cn } from "../lib/utils";
 import { useAppStore } from "../store";
@@ -125,13 +126,20 @@ export function Editor() {
 				</div>
 			) : (
 				<div className="flex flex-1 flex-col items-center justify-center gap-4">
-					<img
-						src="/icon.png"
-						alt="Scratch"
-						className="h-12 w-12 rounded-[14px] opacity-70"
-						draggable={false}
-					/>
-					<p className="text-[13px] text-tertiary">No note selected</p>
+					<button
+						type="button"
+						title="New note"
+						onClick={() => void createNote()}
+						className="flex flex-col items-center gap-3 rounded-2xl p-4 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]"
+					>
+						<img
+							src={appIcon}
+							alt="Scratch"
+							className="h-12 w-12 rounded-[14px] opacity-70"
+							draggable={false}
+						/>
+						<p className="text-[13px] text-tertiary">No note selected</p>
+					</button>
 					<button
 						type="button"
 						title="New note"

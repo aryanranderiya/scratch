@@ -89,8 +89,9 @@ test("@ opens PR autocomplete grouped by org and inserts a mention", async ({ pa
 
 	await expect(popup.getByText("theexperiencecompany", { exact: true })).toBeVisible();
 	await expect(popup.getByText("testuser", { exact: true })).toBeVisible();
-	await expect(popup.locator('[class*="var(--success)"]')).toBeVisible();
-	await expect(popup.locator('[class*="var(--danger)"]')).toBeVisible();
+	// PR icon colored by CI status (inline style color)
+	await expect(popup.locator('[style*="var(--success)"]').first()).toBeVisible();
+	await expect(popup.locator('[style*="var(--danger)"]').first()).toBeVisible();
 	await expect(popup.getByText("Draft", { exact: true })).toBeVisible();
 
 	await popup.locator("button").first().click();
@@ -100,6 +101,10 @@ test("@ opens PR autocomplete grouped by org and inserts a mention", async ({ pa
 	await expect(mention).toBeVisible();
 	const text = await mention.textContent();
 	expect(text).toContain("#");
+	// Rich chip: PR icon + title + repo#number
+	await expect(mention.locator(".pr-mention-icon svg")).toBeVisible();
+	expect(mention.locator(".pr-mention-title").textContent()).not.toBeNull();
+	expect(mention.locator(".pr-mention-repo").textContent()).not.toBeNull();
 
 	await page.waitForFunction(() => {
 		const store = (window as unknown as { __store?: { notes: unknown[] } }).__store!;

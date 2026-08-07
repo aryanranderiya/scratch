@@ -279,25 +279,45 @@
 .pr-mention {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.25rem;
-	background: var(--accent-soft);
-	color: var(--accent);
-	border-radius: 6px;
-	padding: 0.05em 0.35em;
-	font-size: 0.9em;
-	font-weight: 500;
+	gap: 0.3rem;
+	background: color-mix(in oklab, var(--ink) 7%, transparent);
+	color: var(--ink);
+	border-radius: 8px;
+	padding: 0.12em 0.45em;
+	font-size: 0.88em;
 	cursor: pointer;
 	text-decoration: none !important;
-	white-space: nowrap;
+	vertical-align: middle;
 }
 
 .pr-mention:hover {
-	background: color-mix(in oklab, var(--accent) 24%, transparent);
+	background: color-mix(in oklab, var(--ink) 12%, transparent);
+}
+
+.pr-mention .pr-mention-icon {
+	display: inline-flex;
+	align-items: center;
+	flex: none;
+}
+
+.pr-mention .pr-mention-icon svg {
+	width: 0.95em;
+	height: 0.95em;
+}
+
+.pr-mention .pr-mention-title {
+	font-weight: 500;
+	max-width: 22em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .pr-mention .pr-mention-repo {
-	opacity: 0.75;
+	opacity: 0.7;
 	font-weight: 400;
+	font-family: var(--font-mono);
+	font-size: 0.92em;
 }
 
 /* Task list checkboxes */

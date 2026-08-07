@@ -93,19 +93,34 @@ test("drags a PR card between columns and persists the board", async ({ page }) 
 	await expect(targetColumn.getByText("#897")).toBeVisible();
 });
 
-test("filters PRs by repo from the board toolbar", async ({ page }) => {
+test("filters PRs by repo from the top bar and supports select all / none", async ({ page }) => {
 	await page.goto("/");
 	await page.getByTitle("Board").click();
 
 	await expect(page.getByText("#897")).toBeVisible();
 	await expect(page.getByText("#12")).toBeVisible();
 
-	// Hide one repo via the filter menu
+	// Hide one repo via the filter menu in the top bar
 	await page.getByTitle("Filter repos").click();
-	await page.locator("[class*='glass-strong']").getByText("testuser/pet-project", { exact: true }).click();
+	await page
+		.locator("[class*='glass-strong']")
+		.getByText("testuser/pet-project", { exact: true })
+		.click();
 	await page.mouse.click(5, 5); // close the popover
 
 	await expect(page.getByText("#897")).toBeVisible();
 	await expect(page.getByText("#12")).not.toBeVisible();
-	await expect(page.getByText("No pull requests match the current filter")).not.toBeVisible();
+
+	// Select none hides everything
+	await page.getByTitle("Filter repos").click();
+	await page.getByText("Select none").click();
+	await page.mouse.click(5, 5);
+	await expect(page.getByText("No pull requests match the current filter")).toBeVisible();
+
+	// Select all restores everything
+	await page.getByTitle("Filter repos").click();
+	await page.getByText("Select all").click();
+	await page.mouse.click(5, 5);
+	await expect(page.getByText("#897")).toBeVisible();
+	await expect(page.getByText("#12")).toBeVisible();
 });

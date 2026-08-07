@@ -1,9 +1,8 @@
-import { CancelCircleIcon, CheckmarkCircle01Icon, Clock01Icon } from "hugeicons-react";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Spinner } from "../components/ui/Spinner";
-import type { CheckStatus, PrGroup, PrItem } from "../lib/types";
-import { cn } from "../lib/utils";
+import type { PrGroup, PrItem } from "../lib/types";
 import { useAppStore } from "../store";
+import { PrRichCard } from "./PrRichCard";
 
 export interface PrPopupHandle {
 	onKeyDown: (event: KeyboardEvent) => boolean;
@@ -14,23 +13,6 @@ interface PrMentionPopupProps {
 	command: (item: PrItem) => void;
 	query: string;
 	loading?: boolean;
-}
-
-function StatusIcon({ status }: { status: CheckStatus }) {
-	if (status === "success") {
-		return <CheckmarkCircle01Icon className="h-4 w-4 shrink-0 text-[var(--success)]" />;
-	}
-	if (status === "failure") {
-		return <CancelCircleIcon className="h-4 w-4 shrink-0 text-[var(--danger)]" />;
-	}
-	if (status === "pending") {
-		return <Clock01Icon className="h-4 w-4 shrink-0 text-[var(--warning)]" />;
-	}
-	return (
-		<span className="flex h-4 w-4 shrink-0 items-center justify-center text-[11px] leading-none text-[var(--ink-tertiary)]">
-			—
-		</span>
-	);
 }
 
 export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
@@ -129,40 +111,19 @@ export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 			>
 				{grouped.map(({ org, prs }) => (
 					<div key={org}>
-						<div className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-tertiary">
-							{org}
-						</div>
+						<div className="px-2.5 pb-1 pt-2 text-[11px] font-medium text-tertiary">{org}</div>
 						{prs.map((item) => {
 							const idx = visibleItems.indexOf(item);
 							const selected = idx === selectedIndex;
 							return (
-								<button
-									key={item.id}
-									type="button"
-									data-index={idx}
-									onMouseEnter={() => setSelectedIndex(idx)}
-									onMouseDown={(e) => {
-										e.preventDefault();
-										command(item);
-									}}
-									className={cn(
-										"flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors",
-										selected && "bg-[var(--surface-muted)]",
-									)}
-								>
-									<StatusIcon status={item.checkStatus} />
-									<div className="min-w-0 flex-1">
-										<div className="truncate text-[13px] text-[var(--ink)]">{item.title}</div>
-										<div className="truncate text-[11px] text-tertiary">
-											{item.org}/{item.repo}#{item.number}
-										</div>
-									</div>
-									{item.isDraft && (
-										<span className="shrink-0 rounded-md bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] px-1.5 py-0.5 text-[10px] font-medium text-tertiary">
-											Draft
-										</span>
-									)}
-								</button>
+								<div key={item.id} data-index={idx}>
+									<PrRichCard
+										pr={item}
+										selected={selected}
+										onSelect={() => command(item)}
+										onMouseEnter={() => setSelectedIndex(idx)}
+									/>
+								</div>
 							);
 						})}
 					</div>

@@ -172,12 +172,12 @@ impl GithubClient {
             let query: String;
             let url = if org == login {
                 query = format!(
-                    "https://api.github.com/search/issues?q=is:open+is:pr+user:{login}&per_page=100&sort=updated"
+                    "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+user:{login}&per_page=100&sort=updated"
                 );
                 query
             } else {
                 query = format!(
-                    "https://api.github.com/search/issues?q=is:open+is:pr+org:{org}&per_page=100&sort=updated"
+                    "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+org:{org}&per_page=100&sort=updated"
                 );
                 query
             };

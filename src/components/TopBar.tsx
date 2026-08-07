@@ -5,11 +5,13 @@ import {
 	PanelLeftIcon,
 	PinIcon,
 	PlusSignIcon,
+	Refresh01Icon,
 	Settings02Icon,
 } from "hugeicons-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 import { useAppStore } from "../store";
+import { BoardRepoFilter } from "./BoardRepoFilter";
 import { SyncIndicator } from "./SyncIndicator";
 import { Dropdown } from "./ui/Dropdown";
 
@@ -24,6 +26,15 @@ export function TopBar() {
 	const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
 	const view = useAppStore((s) => s.view);
 	const setView = useAppStore((s) => s.setView);
+	const prGroups = useAppStore((s) => s.prGroups);
+
+	const allRepos = useMemo(() => {
+		const seen = new Set<string>();
+		for (const g of prGroups) {
+			for (const pr of g.prs) seen.add(pr.repo);
+		}
+		return [...seen].sort();
+	}, [prGroups]);
 
 	const [editing, setEditing] = useState(false);
 	const titleRef = useRef<HTMLInputElement>(null);
@@ -31,6 +42,16 @@ export function TopBar() {
 	const commitTitle = () => {
 		setEditing(false);
 		void saveActive();
+	};
+
+	const startEditing = () => {
+		if (!active) {
+			void createNote().then(() => {
+				setEditing(true);
+			});
+			return;
+		}
+		setEditing(true);
 	};
 
 	const title = active?.title ?? "Untitled";
@@ -41,51 +62,56 @@ export function TopBar() {
 			data-tauri-drag-region
 		>
 			<div className="drag-header-pad flex min-w-0 flex-1 items-center gap-1.5">
-				{view === "notes" && (
-					<>
-						{editing ? (
-							<input
-								ref={(el) => {
-									titleRef.current = el;
-									if (el) el.focus();
-								}}
-								value={active?.title ?? ""}
-								onChange={(e) => updateActive({ title: e.currentTarget.value })}
-								onBlur={commitTitle}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") commitTitle();
-									if (e.key === "Escape") {
-										updateActive({ title });
-										commitTitle();
-									}
-								}}
-								className="h-7 min-w-0 flex-1 bg-transparent text-[13px] font-semibold tracking-tight outline-none"
-								placeholder="Untitled"
-							/>
-						) : (
-							<button
-								type="button"
-								title="Rename note"
-								onMouseDown={(e) => e.preventDefault()}
-								onClick={() => {
-									setEditing(true);
-									requestAnimationFrame(() => titleRef.current?.select());
-								}}
-								onDoubleClick={(e) => e.preventDefault()}
-								className="h-7 min-w-0 flex-1 truncate rounded px-1 text-left text-[13px] font-semibold tracking-tight transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
-							>
-								{title}
-							</button>
-						)}
-					</>
-				)}
+				{view === "notes" &&
+					(editing ? (
+						<input
+							ref={(el) => {
+								titleRef.current = el;
+								if (el) el.focus();
+							}}
+							value={active?.title ?? ""}
+							onChange={(e) => updateActive({ title: e.currentTarget.value })}
+							onBlur={commitTitle}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") commitTitle();
+								if (e.key === "Escape") {
+									updateActive({ title });
+									commitTitle();
+								}
+							}}
+							className="h-7 min-w-0 flex-1 bg-transparent text-[13px] font-semibold tracking-tight outline-none"
+							placeholder="Untitled"
+						/>
+					) : (
+						<button
+							type="button"
+							title="Note title"
+							onMouseDown={(e) => e.preventDefault()}
+							onClick={startEditing}
+							onDoubleClick={(e) => e.preventDefault()}
+							className="h-7 min-w-0 flex-1 truncate rounded px-1 text-left text-[13px] font-semibold tracking-tight transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
+						>
+							{title}
+						</button>
+					))}
 				{view === "board" && (
-					<span className="truncate text-[13px] font-semibold tracking-tight">Board</span>
+					<>
+						<span className="shrink-0 truncate text-[13px] font-semibold tracking-tight">
+							Board
+						</span>
+						<BoardRepoFilter allRepos={allRepos} />
+					</>
 				)}
 			</div>
 
 			<div className="flex shrink-0 items-center gap-0.5">
 				<SyncIndicator />
+				{view === "board" && (
+					<span className="mr-1 flex items-center gap-1 text-[11px] text-tertiary">
+						<Refresh01Icon className="h-3 w-3" />
+						Auto-syncs
+					</span>
+				)}
 				{view === "notes" && (
 					<>
 						<button

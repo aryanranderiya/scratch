@@ -1,5 +1,5 @@
 import { Cancel01Icon } from "hugeicons-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Button } from "./Button";
 
 interface ModalProps {
@@ -63,7 +63,7 @@ export function Modal({ open, onClose, title, children, width = "max-w-md" }: Mo
 			window.clearTimeout(id);
 			window.removeEventListener("keydown", onKeyDown, true);
 			const prev = previouslyFocused.current;
-			if (prev && prev.isConnected) prev.focus();
+			if (prev?.isConnected) prev.focus();
 		};
 	}, [open, onClose]);
 
