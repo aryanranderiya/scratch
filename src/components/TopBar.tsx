@@ -113,7 +113,8 @@ export function TopBar() {
 								: "text-[var(--ink-secondary)] hover:text-[var(--ink)]",
 						)}
 					>
-						Scratchpad
+						<span className="hidden min-[360px]:inline">Scratchpad</span>
+						<span className="min-[360px]:hidden">Notes</span>
 					</button>
 					<button
 						type="button"
@@ -129,9 +130,7 @@ export function TopBar() {
 						Kanban
 					</button>
 				</div>
-				<div className="hidden min-[360px]:block">
-					<SyncIndicator />
-				</div>
+				<SyncIndicator />
 			</div>
 
 			<div className="flex shrink-0 items-center gap-0.5">

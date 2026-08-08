@@ -26,8 +26,10 @@ export function SyncIndicator() {
 	const lastSyncedAt = sync?.lastSyncedAt ?? null;
 	const remoteConfigured = sync?.remoteConfigured ?? false;
 
-	// Nothing to show when idle and no remote is configured.
-	if (!syncing && !lastError && !(lastSyncedAt && remoteConfigured)) {
+	// Always show once a remote repo is configured so the sync status is
+	// discoverable: spinner while syncing, red alert on failure, checkmark
+	// when synced, and a neutral clock icon while waiting for the first tick.
+	if (!remoteConfigured) {
 		return null;
 	}
 
@@ -54,8 +56,10 @@ export function SyncIndicator() {
 				<RefreshIcon className="h-3.5 w-3.5 animate-spin" />
 			) : lastError ? (
 				<Alert02Icon className="h-3.5 w-3.5" />
-			) : (
+			) : lastSyncedAt ? (
 				<CheckmarkCircle02Icon className="h-3.5 w-3.5 text-[var(--success)]" />
+			) : (
+				<RefreshIcon className="h-3.5 w-3.5" />
 			)}
 		</button>
 	);
