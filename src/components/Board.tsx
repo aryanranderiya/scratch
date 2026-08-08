@@ -19,7 +19,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
 	Cancel01Icon,
-	GitPullRequestIcon,
 	InboxIcon,
 	MoreHorizontalIcon,
 	PencilEdit01Icon,
@@ -33,7 +32,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { PrRepoRef, CiStatusIcon } from "../editor/PrRichCard";
+import { CiStatusIcon, PrIcon, PrRepoRef, PrStateChip } from "../editor/PrRichCard";
 import { openUrl } from "../lib/open";
 import type { BoardColumn, BoardState, PrItem } from "../lib/types";
 import { cn, uid } from "../lib/utils";
@@ -149,19 +148,19 @@ function CardBody({ pr }: { pr: PrItem }) {
 						"flex h-5 w-5 shrink-0 items-center justify-center rounded-md",
 						pr.isDraft
 							? "bg-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
-							: "bg-[color-mix(in_oklab,var(--success)_14%,transparent)]",
+							: pr.state === "merged"
+								? "bg-[color-mix(in_oklab,var(--merged)_14%,transparent)]"
+								: pr.state === "closed"
+									? "bg-[color-mix(in_oklab,var(--danger)_14%,transparent)]"
+									: "bg-[color-mix(in_oklab,var(--success)_14%,transparent)]",
 					)}
 				>
-					<GitPullRequestIcon
-						className={cn(
-							"h-3 w-3",
-							pr.isDraft ? "text-[var(--ink-secondary)]" : "text-[var(--success)]",
-						)}
-					/>
+					<PrIcon pr={pr} className="h-3 w-3" />
 				</span>
 				<span className="min-w-0 flex-1 truncate text-[11px] text-tertiary">
 					<PrRepoRef pr={pr} showOrg={false} />
 				</span>
+				<PrStateChip state={pr.state ?? "open"} />
 				{pr.isDraft && (
 					<span className="shrink-0 rounded bg-[color-mix(in_oklab,var(--ink)_10%,transparent)] px-1.5 py-px text-[10px] font-medium text-[var(--ink-secondary)]">
 						Draft

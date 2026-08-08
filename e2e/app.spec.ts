@@ -260,6 +260,39 @@ test("@ picker excludes PRs from repos in hiddenRepos", async ({ page }) => {
 	await expect(popup.getByText(/pet-project#12/)).toBeVisible();
 });
 
+test("merged and closed PRs show purple/red icons and state chips", async ({ page }) => {
+	await page.goto("/");
+	await page.locator("header button[title='New note']").click();
+	await page.waitForTimeout(300);
+	const editor = page.locator(".tiptap");
+	await editor.click();
+	await editor.pressSequentially("See ");
+	await editor.press("@");
+
+	const popup = page.locator("[data-scratch-popup='pr']");
+	await expect(popup).toBeVisible();
+	// Merged + Closed sections exist at the bottom
+	await expect(popup.getByText("Merged", { exact: true })).toBeVisible();
+	await expect(popup.getByText("Closed", { exact: true })).toBeVisible();
+	// Merged PR icon is purple, closed is red (first svg = the PR icon)
+	await expect(
+		popup
+			.locator("button[title='feat(agents): env-configurable custom dev LLM provider'] svg")
+			.first(),
+	).toHaveCSS("color", "rgb(130, 80, 223)");
+	await expect(
+		popup.locator("button[title='chore: revert broken config'] svg").first(),
+	).toHaveCSS("color", "rgb(255, 59, 48)");
+
+	// Insert the merged PR card — icon purple + Merged chip
+	await popup.locator("button[title='feat(agents): env-configurable custom dev LLM provider']").click();
+	await page.waitForTimeout(300);
+	const card = page.locator(".tiptap .pr-mention-card").first();
+	await expect(card).toBeVisible();
+	await expect(card.locator("svg").first()).toHaveCSS("color", "rgb(130, 80, 223)");
+	await expect(card.getByText("Merged", { exact: true })).toBeVisible();
+});
+
 test("slash command opens the command menu", async ({ page }) => {
 	await page.goto("/");
 	await newNoteButton(page).click();

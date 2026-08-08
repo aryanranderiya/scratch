@@ -15,6 +15,7 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 		url: string;
 		checkStatus: string | null;
 		isDraft: boolean;
+		state: string;
 	};
 
 	// Markdown only stores the reference (org/repo#number), not the title or
@@ -46,6 +47,7 @@ export function PrMentionNodeView({ node }: NodeViewProps) {
 					url: attrs.url,
 					isDraft: livePr?.isDraft ?? attrs.isDraft,
 					checkStatus: (livePr?.checkStatus ?? attrs.checkStatus) as never,
+					state: (livePr?.state ?? attrs.state ?? "open") as never,
 				}}
 				onSelect={onSelect}
 			/>

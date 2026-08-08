@@ -16,6 +16,7 @@ export interface PrMentionAttrs {
 	url: string;
 	checkStatus: string | null;
 	isDraft: boolean;
+	state: string;
 }
 
 function allPrs(groups: PrGroup[]): PrItem[] {
@@ -84,6 +85,7 @@ export const PrMention = Node.create({
 									url: props.url,
 									checkStatus: props.checkStatus,
 									isDraft: props.isDraft,
+									state: props.state ?? "open",
 								},
 							},
 							{ type: "paragraph" },
@@ -147,6 +149,7 @@ export const PrMention = Node.create({
 			title: { ...dataAttr("title"), default: null },
 			url: { ...dataAttr("url"), default: null },
 			checkStatus: { ...dataAttr("check-status"), default: null },
+			state: { ...dataAttr("state"), default: "open" },
 			isDraft: {
 				...dataAttr("is-draft"),
 				default: false,
@@ -201,6 +204,9 @@ export const PrMention = Node.create({
 				parse: {
 					setup() {},
 					updateDOM(element: HTMLElement) {
+						const groups = useAppStore.getState().prGroups;
+						const findPr = (id: string) =>
+							groups.flatMap((g) => g.prs).find((p) => p.id === id);
 						for (const a of Array.from(element.querySelectorAll("a"))) {
 							const match = a
 								.getAttribute("href")
@@ -210,16 +216,18 @@ export const PrMention = Node.create({
 							const org = fullName.split("/")[0];
 							const text = a.textContent ?? "";
 							const id = text.startsWith("@") ? text.slice(1) : `${fullName}#${number}`;
+							const live = findPr(id);
 							const span = document.createElement("span");
 							span.setAttribute("data-type", "prMention");
 							span.setAttribute("data-id", id);
 							span.setAttribute("data-repo", fullName);
 							span.setAttribute("data-org", org);
 							span.setAttribute("data-number", number);
-							span.setAttribute("data-title", a.textContent ?? "");
+							span.setAttribute("data-title", live?.title ?? a.textContent ?? "");
 							span.setAttribute("data-url", a.getAttribute("href") ?? "");
-							span.setAttribute("data-check-status", "success");
-							span.setAttribute("data-is-draft", "false");
+							span.setAttribute("data-check-status", live?.checkStatus ?? "");
+							span.setAttribute("data-is-draft", String(live?.isDraft ?? false));
+							span.setAttribute("data-state", live?.state ?? "open");
 							span.textContent = a.textContent;
 							a.replaceWith(span);
 						}

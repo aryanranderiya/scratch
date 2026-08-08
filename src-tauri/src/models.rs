@@ -88,6 +88,13 @@ pub struct PrItem {
     pub url: String,
     pub is_draft: bool,
     pub check_status: Option<String>,
+    /// "open" | "merged" | "closed" — GitHub's PR lifecycle state.
+    #[serde(default = "default_pr_state")]
+    pub state: String,
+}
+
+fn default_pr_state() -> String {
+    "open".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

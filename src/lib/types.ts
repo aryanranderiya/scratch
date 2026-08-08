@@ -32,6 +32,8 @@ export interface Note {
 
 export type CheckStatus = "success" | "failure" | "pending" | null;
 
+export type PrState = "open" | "merged" | "closed";
+
 export interface PrItem {
 	id: string;
 	repo: string;
@@ -41,6 +43,7 @@ export interface PrItem {
 	url: string;
 	isDraft: boolean;
 	checkStatus: CheckStatus;
+	state?: PrState;
 }
 
 export interface PrGroup {

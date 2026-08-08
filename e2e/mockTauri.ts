@@ -40,14 +40,16 @@ export const tauriMockInitScript = `
       {
         org: "theexperiencecompany",
         prs: [
-          { id: "theexperiencecompany/gaia#897", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 897, title: "chore: release master", url: "https://github.com/theexperiencecompany/gaia/pull/897", isDraft: false, checkStatus: "success" },
-          { id: "theexperiencecompany/gaia#894", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 894, title: "fix(web): recover from stale-asset ChunkLoadError", url: "https://github.com/theexperiencecompany/gaia/pull/894", isDraft: false, checkStatus: "failure" },
+          { id: "theexperiencecompany/gaia#897", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 897, title: "chore: release master", url: "https://github.com/theexperiencecompany/gaia/pull/897", isDraft: false, checkStatus: "success", state: "open" },
+          { id: "theexperiencecompany/gaia#894", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 894, title: "fix(web): recover from stale-asset ChunkLoadError", url: "https://github.com/theexperiencecompany/gaia/pull/894", isDraft: false, checkStatus: "failure", state: "open" },
+          { id: "theexperiencecompany/gaia#880", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 880, title: "feat(agents): env-configurable custom dev LLM provider", url: "https://github.com/theexperiencecompany/gaia/pull/880", isDraft: false, checkStatus: "success", state: "merged" },
+          { id: "theexperiencecompany/gaia#875", repo: "theexperiencecompany/gaia", org: "theexperiencecompany", number: 875, title: "chore: revert broken config", url: "https://github.com/theexperiencecompany/gaia/pull/875", isDraft: false, checkStatus: "success", state: "closed" },
         ],
       },
       {
         org: "testuser",
         prs: [
-          { id: "testuser/pet-project#12", repo: "testuser/pet-project", org: "testuser", number: 12, title: "Add auth flow", url: "https://github.com/testuser/pet-project/pull/12", isDraft: true, checkStatus: null },
+          { id: "testuser/pet-project#12", repo: "testuser/pet-project", org: "testuser", number: 12, title: "Add auth flow", url: "https://github.com/testuser/pet-project/pull/12", isDraft: true, checkStatus: null, state: "open" },
         ],
       },
     ],

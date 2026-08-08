@@ -218,16 +218,33 @@ impl GithubClient {
                 let token = token_owned.clone();
                 let login = login_owned.clone();
                 async move {
-                    let url = if org == login {
-                        format!(
-                            "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+user:{login}&per_page=100&sort=updated"
-                        )
+                    let (scope_query, scope_param) = if org == login {
+                        (format!("user:{login}"), login.clone())
                     } else {
-                        format!(
-                            "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+org:{org}&per_page=100&sort=updated"
-                        )
+                        (format!("org:{org}"), org.clone())
                     };
-                    let items = self.fetch_pr_page(&token, &url).await?;
+                    // Open PRs (the actionable list), plus PRs closed in the
+                    // last 30 days (merged or not) so note references and
+                    // board cards keep showing the real lifecycle state.
+                    // GitHub search requires an absolute date here.
+                    let since = (Utc::now() - chrono::Duration::days(30))
+                        .format("%Y-%m-%d")
+                        .to_string();
+                    let open_url = format!(
+                        "https://api.github.com/search/issues?q=is:open+is:pr+author:{login}+{scope_query}&per_page=100&sort=updated"
+                    );
+                    let mut items = self.fetch_pr_page(&token, &open_url).await?;
+                    let recent_url = format!(
+                        "https://api.github.com/search/issues?q=is:pr+author:{login}+{scope_query}+state:closed+updated:>={since}&per_page=50&sort=updated"
+                    );
+                    let recent = self.fetch_pr_page(&token, &recent_url).await?;
+                    let seen: std::collections::HashSet<u32> =
+                        items.iter().map(|p| p.number).collect();
+                    for p in recent {
+                        if !seen.contains(&p.number) {
+                            items.push(p);
+                        }
+                    }
                     Ok((org, items))
                 }
             })
@@ -394,6 +411,8 @@ impl GithubClient {
             html_url: String,
             repository_url: String,
             #[serde(default)]
+            state: String,
+            #[serde(default)]
             draft: bool,
             #[serde(default)]
             pull_request: Option<serde_json::Value>,
@@ -423,10 +442,30 @@ impl GithubClient {
                     url: i.html_url,
                     is_draft: i.draft,
                     check_status: None,
+                    state: pr_state(&i.state, &i.pull_request),
                 }
             })
             .collect())
     }
+}
+
+/// Derive the PR lifecycle state from the search payload: merged when the PR
+/// is closed with a merge timestamp, closed when closed without one, open
+/// otherwise.
+fn pr_state(state: &str, pull_request: &Option<serde_json::Value>) -> String {
+    if state == "closed" {
+        let merged = pull_request
+            .as_ref()
+            .and_then(|pr| pr.get("merged_at"))
+            .and_then(|m| m.as_str())
+            .map(|m| !m.is_empty())
+            .unwrap_or(false);
+        if merged {
+            return "merged".into();
+        }
+        return "closed".into();
+    }
+    "open".into()
 }
 
 #[derive(Deserialize)]
@@ -468,5 +507,34 @@ fn derive_check_status(runs: &CheckRuns) -> Option<String> {
 impl Default for GithubClient {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pr_json(merged_at: Option<&str>) -> Option<serde_json::Value> {
+        let v = match merged_at {
+            Some(m) => serde_json::json!({ "merged_at": m }),
+            None => serde_json::json!({ "merged_at": null }),
+        };
+        Some(v)
+    }
+
+    #[test]
+    fn pr_state_derives_open_closed_merged() {
+        assert_eq!(pr_state("open", &pr_json(None)), "open");
+        assert_eq!(pr_state("closed", &pr_json(None)), "closed");
+        assert_eq!(
+            pr_state("closed", &pr_json(Some("2026-08-08T14:14:40Z"))),
+            "merged"
+        );
+    }
+
+    #[test]
+    fn pr_state_defaults_when_pull_request_missing() {
+        assert_eq!(pr_state("open", &None), "open");
+        assert_eq!(pr_state("closed", &None), "closed");
     }
 }

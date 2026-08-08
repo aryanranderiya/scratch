@@ -32,13 +32,15 @@ interface PrSection {
 }
 
 function sectionLabel(item: PrItem): string | null {
+	if (item.state === "merged") return "Merged";
+	if (item.state === "closed") return "Closed";
 	if (item.isDraft) return "Drafts";
 	if (item.checkStatus === "success") return "Open · Passing";
 	if (item.checkStatus === "failure") return "Open · Failing";
 	return "Open · Idle";
 }
 
-const SECTION_ORDER = ["Open · Passing", "Open · Failing", "Open · Idle", "Drafts"];
+const SECTION_ORDER = ["Open · Passing", "Open · Failing", "Open · Idle", "Drafts", "Merged", "Closed"];
 
 export const PrMentionPopup = forwardRef<PrPopupHandle, PrMentionPopupProps>(
 	function PrMentionPopup({ items, command, query, loading }, ref) {

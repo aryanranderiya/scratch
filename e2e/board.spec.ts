@@ -18,6 +18,13 @@ test("board view shows columns and PR cards, toggles back to notes", async ({ pa
 	await expect(page.getByText("#897")).toBeVisible();
 	await expect(page.getByText("#894")).toBeVisible();
 
+	// Merged card shows purple icon + chip, closed card red icon + chip
+	const mergedCard = page.locator("div[title^='feat(agents): env-configurable']");
+	if ((await mergedCard.count()) > 0) {
+		await expect(mergedCard.locator("svg").first()).toHaveCSS("color", "rgb(130, 80, 223)");
+		await expect(mergedCard.getByText("Merged", { exact: true })).toBeVisible();
+	}
+
 	await page.getByTitle("Scratchpad", { exact: true }).click();
 	await expect(page.getByText("Untitled")).toBeVisible();
 	await expect(page.getByTitle("Kanban")).toBeVisible();
