@@ -12,6 +12,14 @@ export const tauriMockInitScript = `
     configOverrides = {};
   }
 
+  var seededNotes = [];
+  try {
+    var rawNotes = window.localStorage.getItem("scratch-mock-notes");
+    seededNotes = rawNotes ? JSON.parse(rawNotes) : [];
+  } catch (e) {
+    seededNotes = [];
+  }
+
   const store = {
     config: {
       githubToken: "mock-token",
@@ -27,7 +35,7 @@ export const tauriMockInitScript = `
       toolbarCollapsed: false,
       ...configOverrides,
     },
-    notes: [],
+    notes: seededNotes,
     prGroups: [
       {
         org: "theexperiencecompany",

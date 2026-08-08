@@ -163,6 +163,24 @@ export const PrMention = Node.create({
 		return [{ tag: 'span[data-type="prMention"]' }];
 	},
 
+	// Node-level toDOM so ProseMirror can tear down the node (e.g. editor
+	// unmount on view switch) without a React NodeView attached. Without this,
+	// destroy() hits `type.spec.toDOM is not a function` and crashes the app.
+	renderHTML({ HTMLAttributes }) {
+		return [
+			"div",
+			{ "data-type": "prMention", class: "pr-mention-slot" },
+			[
+				"div",
+				{},
+				"@" +
+					String(HTMLAttributes.repo ?? "") +
+					"#" +
+					String(HTMLAttributes.number ?? ""),
+			],
+		];
+	},
+
 	addNodeView() {
 		return ReactNodeViewRenderer(PrMentionNodeView);
 	},

@@ -139,6 +139,24 @@ pub fn save_image(state: State<AppState>, bytes: Vec<u8>, ext: Option<String>) -
     Ok(format!("scratch-assets/{filename}"))
 }
 
+/// Append a crash report to crash.log in the app config dir, so errors can be
+/// diagnosed without needing to copy text out of the UI.
+#[tauri::command]
+pub fn save_crash_report(state: State<AppState>, report: String) -> AppResult<()> {
+    let config_dir = state.config.dir();
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| AppError::Io(format!("create config dir: {e}")))?;
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(config_dir.join("crash.log"))
+        .map_err(|e| AppError::Io(format!("open crash.log: {e}")))?;
+    writeln!(file, "---\n{report}")
+        .map_err(|e| AppError::Io(format!("write crash.log: {e}")))?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn get_github_user(token: String) -> AppResult<GithubUser> {
     let client = GithubClient::new();

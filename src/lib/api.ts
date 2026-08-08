@@ -30,6 +30,8 @@ export const api = {
 	saveImage: (bytes: number[], ext: string | null) =>
 		call<string>("save_image", { bytes, ext }),
 
+	saveCrashReport: (report: string) => call<void>("save_crash_report", { report }),
+
 	getGithubUser: (token: string) => call<GithubUser>("get_github_user", { token }),
 	listOrgs: (token: string) => call<string[]>("list_orgs", { token }),
 	listUserRepos: (token: string) => call<RepoChoice[]>("list_user_repos", { token }),

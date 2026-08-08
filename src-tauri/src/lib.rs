@@ -117,6 +117,7 @@ pub fn build_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builde
             save_note,
             delete_note,
             save_image,
+            save_crash_report,
             get_board,
             save_board,
             get_github_user,

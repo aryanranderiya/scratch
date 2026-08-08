@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
+import { CrashLogModal } from "./components/CrashLogModal";
 import { Onboarding } from "./components/Onboarding";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
@@ -24,11 +25,28 @@ export default function App() {
 	const config = useAppStore((s) => s.config);
 	const bootstrap = useAppStore((s) => s.bootstrap);
 	const view = useAppStore((s) => s.view);
+	const setView = useAppStore((s) => s.setView);
 
 	useEffect(() => {
 		void bootstrap();
 		bindThemeListener();
 	}, [bootstrap]);
+
+	// Cmd+1 / Cmd+2 switch between scratchpad and kanban.
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (!e.metaKey && !e.ctrlKey) return;
+			if (e.key === "1") {
+				e.preventDefault();
+				setView("notes");
+			} else if (e.key === "2") {
+				e.preventDefault();
+				setView("board");
+			}
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [setView]);
 
 	if (!ready || !config) {
 		return (
@@ -57,6 +75,7 @@ export default function App() {
 			</main>
 			<Sidebar />
 			<SettingsModal />
+			<CrashLogModal />
 		</div>
 	);
 }

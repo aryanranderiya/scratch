@@ -14,6 +14,14 @@ impl ConfigStore {
         }
     }
 
+    /// Directory containing config.json (also where crash.log is written).
+    pub fn dir(&self) -> PathBuf {
+        self.path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| PathBuf::from("."))
+    }
+
     pub fn load(&self) -> AppResult<AppConfig> {
         if !self.path.exists() {
             let cfg = AppConfig::default();
