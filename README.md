@@ -147,10 +147,13 @@ OPENSSL_STATIC=1 pnpm tauri build
 ```
 
 `tauri build` asks Finder to lay out the DMG window, which stalls on headless or automation-denied machines. Then
-build the app only and package it with `hdiutil`:
+build the app only and sign + package it by hand — without a Developer ID, Tauri leaves the bundle with only a
+linker ad-hoc signature that Gatekeeper reports as a damaged app:
 
 ```bash
 OPENSSL_STATIC=1 pnpm tauri build --bundles app
+codesign --force --sign - --identifier com.scratch.app \
+  src-tauri/target/release/bundle/macos/Scratch.app
 hdiutil create -volname Scratch \
   -srcfolder "src-tauri/target/release/bundle/macos/Scratch.app" \
   -ov -format UDZO Scratch_0.1.0_aarch64.dmg
