@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/aryanranderiya/scratch/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/aryanranderiya/scratch?style=flat-square&color=2f6fed" /></a>
+  <img alt="macOS 11+" src="https://img.shields.io/badge/macOS-11%2B-black?style=flat-square&logo=apple&logoColor=white" />
+  <img alt="Tauri v2" src="https://img.shields.io/badge/Tauri-v2-24C8DB?style=flat-square&logo=tauri&logoColor=white" />
+</p>
+
+<p align="center">
   <img src="docs/screenshots/notes.png" width="700" alt="Scratch notes" />
 </p>
 
@@ -30,22 +36,41 @@ Obsidian and Notion are heavy. macOS Stickies have no markdown and no sync. Scra
   <img src="docs/screenshots/kanban.png" width="700" alt="Scratch kanban board" />
 </p>
 
-## Downloads
+## Download
 
-Installers are built by CI and attached to each [release](https://github.com/aryanranderiya/scratch/releases).
+**[Latest release →](https://github.com/aryanranderiya/scratch/releases/latest)**
 
 | Platform | Artifact |
 | --- | --- |
-| macOS (Apple Silicon) | `Scratch_<version>_aarch64.dmg` |
-| macOS (Intel) | `Scratch_<version>_x64.dmg` |
-| Linux | `scratch_<version>_amd64.AppImage`, `.deb` |
-| Windows | `Scratch_<version>_x64.msi`, `.exe` (NSIS) |
+| macOS 11+ (Apple Silicon) | `Scratch_<version>_aarch64.dmg` |
+| Linux | `scratch_<version>_amd64.AppImage` or `.deb` |
+| Windows 10+ | `Scratch_<version>_x64-setup.exe` or `.msi` |
 
-To build locally:
+Every release ships the Apple Silicon DMG. Linux and Windows bundles are built by
+[`.github/workflows/release.yml`](https://github.com/aryanranderiya/scratch/blob/main/.github/workflows/release.yml)
+on each tag; until one shows up in a release, `pnpm tauri build` on that platform produces the same installers from source.
+Intel Macs can build from source too — see [Build it yourself](#build-it-yourself).
+
+### First launch on macOS
+
+Builds are unsigned and not notarized yet, so Gatekeeper blocks the first open with
+*"Apple could not verify 'Scratch' is free of malware"*. Allow it once with right-click → **Open**,
+or clear the quarantine flag:
 
 ```bash
-pnpm tauri build   # packages .app + .dmg on macOS
+xattr -dr com.apple.quarantine /Applications/Scratch.app
 ```
+
+### Build it yourself
+
+```bash
+pnpm install
+OPENSSL_STATIC=1 pnpm tauri build   # → src-tauri/target/release/bundle/ (.app + .dmg on macOS)
+```
+
+`OPENSSL_STATIC=1` matters on macOS: without it the app links Homebrew's `libssl` and only launches on machines that
+have the same Homebrew OpenSSL installed. It is safe to drop on Linux and Windows, where the system OpenSSL is
+expected.
 
 ## Getting started
 
@@ -87,7 +112,7 @@ pnpm build                            # typecheck + build frontend
 pnpm exec biome check src e2e         # lint
 pnpm exec playwright test             # UI tests (headless)
 cd src-tauri && cargo test            # backend command tests
-pnpm tauri build                      # package .app + .dmg
+pnpm tauri build                      # package .app + .dmg (add OPENSSL_STATIC=1 for a portable build)
 ```
 
 ## Architecture
@@ -106,10 +131,31 @@ pnpm tauri build                      # package .app + .dmg
 
 ## Releasing
 
-Tag a version to build and attach installers:
+Releases are tag-driven:
 
 ```bash
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-CI builds macOS (dmg), Linux (AppImage/deb), and Windows (msi/nsis) assets and drafts a GitHub release.
+CI builds macOS, Linux, and Windows bundles with `tauri-action` and attaches them to a draft release, which you
+then edit and publish. Bump the version in `package.json` and `src-tauri/tauri.conf.json` before tagging.
+
+To build the macOS disk image locally:
+
+```bash
+OPENSSL_STATIC=1 pnpm tauri build
+```
+
+`tauri build` asks Finder to lay out the DMG window, which stalls on headless or automation-denied machines. Then
+build the app only and package it with `hdiutil`:
+
+```bash
+OPENSSL_STATIC=1 pnpm tauri build --bundles app
+hdiutil create -volname Scratch \
+  -srcfolder "src-tauri/target/release/bundle/macos/Scratch.app" \
+  -ov -format UDZO Scratch_0.1.0_aarch64.dmg
+```
+
+Release artifacts are built per architecture — a universal arm64 + x86_64 app needs an x86_64 OpenSSL installed as
+well, which stock Homebrew does not provide.
+
