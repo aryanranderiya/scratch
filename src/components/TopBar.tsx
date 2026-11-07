@@ -59,12 +59,12 @@ export function TopBar() {
 	const title = active?.title ?? "Untitled";
 
 	return (
-		<header
-			className="drag-header flex h-11 shrink-0 items-center gap-1 pr-2"
-			data-tauri-drag-region
-		>
+		<header className="drag-header flex h-11 shrink-0 items-center gap-1 pr-2">
 			{/* Note title takes the full width; tabs sit on the right. */}
-			<div className="drag-header-pad flex min-w-0 flex-1 items-center gap-1.5">
+			<div
+				className="drag-header-pad flex min-w-0 flex-1 items-center gap-1.5"
+				data-tauri-drag-region
+			>
 				{view === "notes" &&
 					(editing ? (
 						<input
